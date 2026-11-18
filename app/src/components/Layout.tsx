@@ -7,6 +7,8 @@ import { useLive } from "../lib/live";
 import { Avatar, Dot, Skeleton, Switch } from "./ui";
 import { IAgents, IChannels, ILive, IUsage, IPlus, IShield } from "./icons";
 import { Toaster, toast } from "./toast";
+import { Select } from "./Select";
+import { LANGS, setLang, t, useLang, type Lang } from "../lib/i18n";
 
 const navCls =
   "flex h-[34px] items-center gap-2.5 rounded-[7px] px-2.5 font-medium text-fg-2 transition-colors hover:bg-hover hover:text-fg";
@@ -27,7 +29,18 @@ function Logo() {
 
 function AnyRunning() {
   const running = useLive((s) => s.order.some((c) => s.agents[c]?.steps.some((st) => st.status === "run")));
-  return running ? <span aria-label="agentes trabalhando" className="anim-blink ml-auto size-[7px] rounded-full bg-live" /> : null;
+  return running ? <span aria-label={t("agentes trabalhando")} className="anim-blink ms-auto size-[7px] rounded-full bg-live" /> : null;
+}
+
+/** Idioma da interface: o mesmo Select dos outros campos, com o nome de cada idioma nele mesmo. */
+function Language() {
+  const lang = useLang();
+  return (
+    <label className="mt-auto flex flex-col gap-1.5 px-2.5 text-xs text-dim">
+      {t("Idioma")}
+      <Select<Lang> label={t("Idioma")} size="sm" value={lang} onChange={setLang} options={LANGS} />
+    </label>
+  );
 }
 
 function Autopilot() {
@@ -39,23 +52,23 @@ function Autopilot() {
     start(async () => {
       try {
         await (v ? commands.watchStart() : commands.watchStop());
-        toast(v ? "Piloto automático ligado" : "Piloto automático desligado");
+        toast(v ? t("Piloto automático ligado") : t("Piloto automático desligado"));
       } catch (e) {
         toast(errMsg(e), "error");
       }
       await qc.invalidateQueries({ queryKey: keys.status });
     });
   return (
-    <div className="mt-auto flex flex-col gap-1 border-t border-line px-2.5 pt-3">
+    <div className="flex flex-col gap-1 border-t border-line px-2.5 pt-3">
       <label className="flex items-center gap-2 font-medium">
         <Dot tone={on ? "ok" : "off"} />
-        <span className="flex-1">{on ? "Piloto automático ligado" : "Piloto automático desligado"}</span>
-        <Switch checked={on} disabled={pending || !data} onChange={toggle} label="Piloto automático" />
+        <span className="flex-1">{on ? t("Piloto automático ligado") : t("Piloto automático desligado")}</span>
+        <Switch checked={on} disabled={pending || !data} onChange={toggle} label={t("Piloto automático")} />
       </label>
       <span className="text-xs text-muted">
         {on
-          ? "Os agentes trabalham sozinhos e postam no horário de cada canal."
-          : "Nada roda sozinho. Você ainda pode fazer vídeos de teste."}
+          ? t("Os agentes trabalham sozinhos e postam no horário de cada canal.")
+          : t("Nada roda sozinho. Você ainda pode fazer vídeos de teste.")}
       </span>
     </div>
   );
@@ -76,7 +89,7 @@ function ChannelNav() {
         <Link key={c.slug} to="/canal/$slug" params={{ slug: c.slug }} className={navCls} activeProps={navOn}>
           <Avatar slug={c.slug} color={c.color} hasPhoto={c.has_avatar} />
           <span className="truncate">{c.slug}</span>
-          {c.busy && <Dot tone="run" pulse className="ml-auto" />}
+          {c.busy && <Dot tone="run" pulse className="ms-auto" />}
         </Link>
       ))}
     </>
@@ -90,7 +103,7 @@ function SetupDot() {
   const warn = data?.filter((i) => i.status === "warn").length ?? 0;
   if (!missing && !warn) return null;
   return (
-    <span className={`mono ml-auto text-xs ${missing ? "text-live" : "text-warn"}`} title={missing ? `${missing} faltando` : `${warn} aviso(s)`}>
+    <span className={`mono ms-auto text-xs ${missing ? "text-live" : "text-warn"}`} title={missing ? t("{n} faltando", { n: missing }) : t("{n} aviso(s)", { n: warn })}>
       {missing || warn}
     </span>
   );
@@ -98,51 +111,52 @@ function SetupDot() {
 
 function Count() {
   const { data } = useChannelsLoose();
-  return <span className="mono ml-auto text-xs text-dim">{data?.length ?? ""}</span>;
+  return <span className="mono ms-auto text-xs text-dim">{data?.length ?? ""}</span>;
 }
 
 export function Layout() {
   return (
     <div className="flex min-h-screen">
-      <aside className="sticky top-0 flex h-screen w-[248px] flex-none flex-col gap-[22px] overflow-y-auto border-r border-line px-3.5 py-5 max-[900px]:w-[208px]">
+      <aside className="sticky top-0 flex h-screen w-[248px] flex-none flex-col gap-[22px] overflow-y-auto border-e border-line px-3.5 py-5 max-[900px]:w-[208px]">
         <Logo />
-        <nav aria-label="Principal" className="flex flex-col gap-0.5">
+        <nav aria-label={t("Principal")} className="flex flex-col gap-0.5">
           <Link to="/" className={navCls} activeProps={navOn} activeOptions={{ exact: true }}>
             <IChannels />
-            Canais
+            {t("Canais")}
             <Count />
           </Link>
           <Link to="/ao-vivo" className={navCls} activeProps={navOn}>
             <ILive />
-            Ao vivo
+            {t("Ao vivo")}
             <AnyRunning />
           </Link>
           <Link to="/agentes" className={navCls} activeProps={navOn}>
             <IAgents />
-            Agentes
+            {t("Agentes")}
           </Link>
           <Link to="/cortes" className={navCls} activeProps={navOn}>
             <ILive />
-            Cortes
+            {t("Cortes")}
           </Link>
           <Link to="/consumo" className={navCls} activeProps={navOn}>
             <IUsage />
-            Consumo
+            {t("Consumo")}
           </Link>
           <Link to="/novo" className={navCls} activeProps={navOn}>
             <IPlus />
-            Novo canal
+            {t("Novo canal")}
           </Link>
           <Link to="/primeiros-passos" className={navCls} activeProps={navOn}>
             <IShield />
-            Primeiros passos
+            {t("Primeiros passos")}
             <SetupDot />
           </Link>
         </nav>
         <div className="flex flex-col gap-0.5">
-          <span className="px-2.5 pb-1.5 text-xs text-dim">Canais</span>
+          <span className="px-2.5 pb-1.5 text-xs text-dim">{t("Canais")}</span>
           <ChannelNav />
         </div>
+        <Language />
         <Autopilot />
       </aside>
       <main className="min-w-0 flex-1 px-10 pt-7 pb-12 max-[900px]:px-5">

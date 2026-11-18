@@ -30,7 +30,7 @@
   --radius-md: 10px;
   --radius-lg: 14px;
 
-  --font-sans: "Geist Variable", system-ui, sans-serif;
+  --font-sans: "Geist Variable", "Segoe UI", "Noto Sans Arabic", system-ui, sans-serif;
   --font-mono: "Geist Mono Variable", ui-monospace, monospace;
 
   --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -237,7 +237,7 @@
     content: "";
     position: absolute;
     top: 2px;
-    left: 2px;
+    inset-inline-start: 2px;
     width: 16px;
     height: 16px;
     border-radius: 50%;
@@ -250,6 +250,13 @@
   }
   .sw:checked::after {
     transform: translateX(14px);
+  }
+  [dir="rtl"] .sw:checked::after {
+    transform: translateX(-14px);
+  }
+  /* arabe: Geist nao tem os glifos; o Segoe UI do Windows desenha o texto com altura de linha um pouco maior */
+  :root[lang="ar"] body {
+    line-height: 1.6;
   }
   .seg-strip {
     display: flex;

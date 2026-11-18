@@ -15,7 +15,9 @@ Two channel formats (`format` in `channel.toml`):
 - **edit** — footage edits. Studies reference profiles, rebuilds an edit's structure with the channel's clip bank
   and the character's real lines, renders with Remotion, reviews it (measured QA + Claude) and posts.
 
-The user interface, logs and code comments are in Portuguese (pt-BR) for now; identifiers are in English.
+The desktop app speaks Portuguese (pt-BR), English and Arabic (right-to-left); pick the language at the bottom of the
+sidebar. Logs and code comments are in Portuguese; identifiers are in English. To add a language, see
+[`app/src/lib/messages.ts`](app/src/lib/messages.ts).
 
 ## Install
 

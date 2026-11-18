@@ -3,18 +3,20 @@ import { useQueryClient } from "@tanstack/react-query";
 import { commands, errMsg, type AgentConfig, type ChannelAgent, type TaskRow } from "../lib/api";
 import { keys, useAgentConfig, useChannelsLoose } from "../lib/queries";
 import { activeStep, useLive } from "../lib/live";
-import { EFFORT_LABEL, EFFORT_LEVEL, modelLabel } from "../lib/format";
+import { EFFORT_LEVEL, effortLabel, modelLabel } from "../lib/format";
 import { Avatar, Dialog, EffortBars, Page, PageHeader, Panel } from "../components/ui";
 import { ISpin } from "../components/icons";
 import { toast } from "../components/toast";
 import { Select } from "../components/Select";
+import { t, tx } from "../lib/i18n";
+import type { MsgKey } from "../lib/messages";
 
-const MODEL_DESC: Record<string, string> = {
+const MODEL_DESC: Record<string, MsgKey> = {
   "claude-opus-5-5": "O mais forte. Melhor pra estudar e criar.",
   "claude-sonnet-5-5": "Rápido e bom. Equilíbrio de custo.",
   "claude-haiku-5-5": "O mais leve. Bom pra tarefas simples.",
 };
-const TASK_DESC: Record<string, string> = {
+const TASK_DESC: Record<string, MsgKey> = {
   study: "Assiste as referências e escreve o guia de estilo",
   ideate: "Escreve o roteiro de cada vídeo",
   review: "Olha os frames e dá a nota",
@@ -26,7 +28,7 @@ const TASK_DESC: Record<string, string> = {
 type Target = { kind: "global" } | { kind: "task"; task: TaskRow } | { kind: "channel"; ch: ChannelAgent };
 
 function summaryOf(model: string, effort: string, cfg: AgentConfig) {
-  return `${modelLabel(model || cfg.model)} · esforço ${EFFORT_LABEL[effort || cfg.effort] ?? effort}`;
+  return t("{m} · esforço {e}", { m: modelLabel(model || cfg.model), e: effortLabel(effort || cfg.effort) });
 }
 
 function ModelPicker({ value, onChange, models, allowInherit }: {
@@ -35,9 +37,9 @@ function ModelPicker({ value, onChange, models, allowInherit }: {
   models: { value: string; label: string }[];
   allowInherit: boolean;
 }) {
-  const opts = allowInherit ? [{ value: "", label: "Padrão" }, ...models] : models;
+  const opts = allowInherit ? [{ value: "", label: t("Padrão") }, ...models] : models;
   return (
-    <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Modelo">
+    <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t("Modelo")}>
       {opts.map((m) => {
         const on = m.value === value;
         return (
@@ -47,7 +49,7 @@ function ModelPicker({ value, onChange, models, allowInherit }: {
             role="radio"
             aria-checked={on}
             onClick={() => onChange(m.value)}
-            className={`grid grid-cols-[minmax(0,1fr)_18px] gap-x-2.5 gap-y-1 rounded-[10px] border-0 px-3.5 py-3 text-left transition-shadow duration-200 ${
+            className={`grid grid-cols-[minmax(0,1fr)_18px] gap-x-2.5 gap-y-1 rounded-[10px] border-0 px-3.5 py-3 text-start transition-shadow duration-200 ${
               on ? "bg-accent-bg shadow-[0_0_0_1.5px_var(--color-accent)]" : "bg-raise shadow-[0_0_0_1px_var(--color-line)] hover:shadow-[0_0_0_1px_var(--color-line-strong)]"
             }`}
           >
@@ -59,7 +61,7 @@ function ModelPicker({ value, onChange, models, allowInherit }: {
             >
               {on && <span className="size-1.5 rounded-full bg-bg" />}
             </span>
-            <span className="text-xs text-muted">{m.value ? MODEL_DESC[m.value] ?? "" : "Herda do nível de cima."}</span>
+            <span className="text-xs text-muted">{m.value ? (MODEL_DESC[m.value] ? t(MODEL_DESC[m.value]!) : "") : t("Herda do nível de cima.")}</span>
           </button>
         );
       })}
@@ -75,7 +77,7 @@ function EffortPicker({ value, onChange, efforts, allowInherit }: {
 }) {
   const opts = allowInherit ? ["", ...efforts] : efforts;
   return (
-    <div className={`grid gap-1.5 ${allowInherit ? "grid-cols-6" : "grid-cols-5"}`} role="radiogroup" aria-label="Esforço">
+    <div className={`grid gap-1.5 ${allowInherit ? "grid-cols-6" : "grid-cols-5"}`} role="radiogroup" aria-label={t("Esforço")}>
       {opts.map((e) => {
         const on = e === value;
         const lvl = EFFORT_LEVEL[e] ?? 0;
@@ -95,7 +97,7 @@ function EffortPicker({ value, onChange, efforts, allowInherit }: {
                 <span key={i} className={`w-[5px] rounded-[2px] ${on && i <= lvl ? "bg-accent" : i <= lvl ? "bg-[#5a5d66]" : "bg-line-strong"}`} style={{ height: 6 + i * 5 }} />
               ))}
             </span>
-            {e ? EFFORT_LABEL[e] : "padrão"}
+            {e ? effortLabel(e) : t("padrão")}
           </button>
         );
       })}
@@ -120,13 +122,13 @@ function ConfigDialog({ target, cfg, onClose }: { target: Target; cfg: AgentConf
   const inherit = target.kind !== "global";
 
   const title =
-    target.kind === "global" ? "Padrão pra todos" : target.kind === "task" ? target.task.label : `Agente do ${target.ch.slug}`;
+    target.kind === "global" ? t("Padrão pra todos") : target.kind === "task" ? tx(target.task.label) : t("Agente do {slug}", { slug: target.ch.slug });
   const sub =
     target.kind === "global"
-      ? "Vale pra toda tarefa de todo canal que não tiver ajuste."
+      ? t("Vale pra toda tarefa de todo canal que não tiver ajuste.")
       : target.kind === "task"
-        ? `${TASK_DESC[target.task.task] ?? ""}. Vale pra todos os canais.`
-        : "Ajuste do canal vale mais que o da tarefa e o padrão.";
+        ? t("{d}. Vale pra todos os canais.", { d: TASK_DESC[target.task.task] ? t(TASK_DESC[target.task.task]!) : "" })
+        : t("Ajuste do canal vale mais que o da tarefa e o padrão.");
 
   const save = () =>
     start(async () => {
@@ -139,13 +141,13 @@ function ConfigDialog({ target, cfg, onClose }: { target: Target; cfg: AgentConf
         } else {
           const slug = target.ch.slug;
           await commands.setAgentConfig({ channel: slug, task: null }, own ? model : "", own ? effort : "");
-          for (const t of tasks) {
-            const before = target.ch.tasks.find((x) => x.task === t.task);
-            if (before && (before.model !== t.model || before.effort !== t.effort))
-              await commands.setAgentConfig({ channel: slug, task: t.task }, t.model, t.effort);
+          for (const tk of tasks) {
+            const before = target.ch.tasks.find((x) => x.task === tk.task);
+            if (before && (before.model !== tk.model || before.effort !== tk.effort))
+              await commands.setAgentConfig({ channel: slug, task: tk.task }, tk.model, tk.effort);
           }
         }
-        toast("Agente atualizado");
+        toast(t("Agente atualizado"));
         await qc.invalidateQueries({ queryKey: keys.agents });
         await qc.invalidateQueries({ queryKey: keys.status });
         await qc.invalidateQueries({ queryKey: keys.channels });
@@ -168,10 +170,10 @@ function ConfigDialog({ target, cfg, onClose }: { target: Target; cfg: AgentConf
       <div className="overflow-y-auto">
         {target.kind === "channel" && (
           <div className="flex flex-col gap-3 border-t border-line-soft px-[22px] py-[18px]">
-            <div className="grid grid-cols-2 gap-2 rounded-xl bg-bg p-1 shadow-[inset_0_0_0_1px_var(--color-line-soft)]" role="radiogroup" aria-label="Como configurar">
+            <div className="grid grid-cols-2 gap-2 rounded-xl bg-bg p-1 shadow-[inset_0_0_0_1px_var(--color-line-soft)]" role="radiogroup" aria-label={t("Como configurar")}>
               {[
-                { v: false, t: "Seguir o padrão", d: summaryOf("", "", cfg) },
-                { v: true, t: "Configurar próprio", d: "Modelo e esforço só desse canal" },
+                { v: false, t: t("Seguir o padrão"), d: summaryOf("", "", cfg) },
+                { v: true, t: t("Configurar próprio"), d: t("Modelo e esforço só desse canal") },
               ].map((o) => (
                 <button
                   key={String(o.v)}
@@ -179,7 +181,7 @@ function ConfigDialog({ target, cfg, onClose }: { target: Target; cfg: AgentConf
                   role="radio"
                   aria-checked={own === o.v}
                   onClick={() => setOwn(o.v)}
-                  className={`flex flex-col gap-0.5 rounded-[9px] border-0 px-3 py-2.5 text-left ${
+                  className={`flex flex-col gap-0.5 rounded-[9px] border-0 px-3 py-2.5 text-start ${
                     own === o.v ? "bg-[#22233d] text-fg shadow-[0_0_0_1px_#3d3f7a]" : "bg-transparent text-muted hover:text-fg"
                   }`}
                 >
@@ -193,20 +195,20 @@ function ConfigDialog({ target, cfg, onClose }: { target: Target; cfg: AgentConf
         {(target.kind !== "channel" || own) && (
           <>
             <div className="flex flex-col gap-3 border-t border-line-soft px-[22px] py-[18px]">
-              <span className="text-[13px] font-semibold">Modelo</span>
+              <span className="text-[13px] font-semibold">{t("Modelo")}</span>
               <ModelPicker value={model} onChange={setModel} models={cfg.models} allowInherit={inherit} />
             </div>
             <div className="flex flex-col gap-3 border-t border-line-soft px-[22px] py-[18px]">
-              <span className="text-[13px] font-semibold">Esforço</span>
-              <span className="-mt-2 text-xs text-dim">Mais esforço pensa mais antes de responder: melhor resultado, mais tokens.</span>
+              <span className="text-[13px] font-semibold">{t("Esforço")}</span>
+              <span className="-mt-2 text-xs text-dim">{t("Mais esforço pensa mais antes de responder: melhor resultado, mais tokens.")}</span>
               <EffortPicker value={effort} onChange={setEffort} efforts={cfg.efforts} allowInherit={inherit} />
             </div>
           </>
         )}
         {target.kind === "global" && (
           <div className="flex flex-col gap-2 border-t border-line-soft px-[22px] py-[18px]">
-            <span className="text-[13px] font-semibold">Agentes ao mesmo tempo</span>
-            <span className="text-xs text-dim">Quantos agentes podem pensar juntos. O navegador continua um por vez.</span>
+            <span className="text-[13px] font-semibold">{t("Agentes ao mesmo tempo")}</span>
+            <span className="text-xs text-dim">{t("Quantos agentes podem pensar juntos. O navegador continua um por vez.")}</span>
             <div className="flex gap-1.5">
               {[1, 2, 3, 4].map((n) => (
                 <button
@@ -220,28 +222,28 @@ function ConfigDialog({ target, cfg, onClose }: { target: Target; cfg: AgentConf
                 </button>
               ))}
             </div>
-            <span className="text-xs text-dim">Muda depois de reabrir o app.</span>
+            <span className="text-xs text-dim">{t("Muda depois de reabrir o app.")}</span>
           </div>
         )}
         {target.kind === "channel" && (
           <div className="flex flex-col gap-2 border-t border-line-soft px-[22px] py-[18px]">
-            <span className="text-[13px] font-semibold">Ajuste por tarefa neste canal</span>
-            {tasks.map((t, i) => (
-              <div key={t.task} className="grid grid-cols-[minmax(0,1fr)_130px_120px] items-center gap-2 border-t border-[#1f2125] py-2 first:border-t-0">
-                <span className="text-[13px]">{t.label}</span>
+            <span className="text-[13px] font-semibold">{t("Ajuste por tarefa neste canal")}</span>
+            {tasks.map((tk, i) => (
+              <div key={tk.task} className="grid grid-cols-[minmax(0,1fr)_130px_120px] items-center gap-2 border-t border-[#1f2125] py-2 first:border-t-0">
+                <span className="text-[13px]">{tx(tk.label)}</span>
                 <Select
                   size="sm"
-                  label={`Modelo: ${t.label}`}
-                  value={t.model}
+                  label={t("Modelo: {l}", { l: tx(tk.label) })}
+                  value={tk.model}
                   onChange={(v) => setTasks(tasks.map((x, j) => (j === i ? { ...x, model: v } : x)))}
-                  options={[{ value: "", label: "padrão" }, ...cfg.models.map((m) => ({ value: m.value, label: m.label }))]}
+                  options={[{ value: "", label: t("padrão") }, ...cfg.models.map((m) => ({ value: m.value, label: m.label }))]}
                 />
                 <Select
                   size="sm"
-                  label={`Esforço: ${t.label}`}
-                  value={t.effort}
+                  label={t("Esforço: {l}", { l: tx(tk.label) })}
+                  value={tk.effort}
                   onChange={(v) => setTasks(tasks.map((x, j) => (j === i ? { ...x, effort: v } : x)))}
-                  options={[{ value: "", label: "padrão" }, ...cfg.efforts.map((e) => ({ value: e, label: EFFORT_LABEL[e] ?? e }))]}
+                  options={[{ value: "", label: t("padrão") }, ...cfg.efforts.map((e) => ({ value: e, label: effortLabel(e) }))]}
                 />
               </div>
             ))}
@@ -250,11 +252,11 @@ function ConfigDialog({ target, cfg, onClose }: { target: Target; cfg: AgentConf
       </div>
       <div className="flex items-center justify-end gap-2 border-t border-line-soft px-[22px] py-4">
         <button className="btn btn-ghost" type="button" onClick={onClose}>
-          Cancelar
+          {t("Cancelar")}
         </button>
         <button className="btn btn-pri" type="button" onClick={save} disabled={pending}>
           {pending && <ISpin size={14} />}
-          Salvar
+          {t("Salvar")}
         </button>
       </div>
     </div>
@@ -274,7 +276,7 @@ function NowCell({ slug }: { slug: string }) {
   return (
     <span className="flex items-center gap-2 text-[13px] whitespace-nowrap text-fg-2">
       <span className={`size-[7px] rounded-full ${st ? "anim-pulse bg-accent" : "bg-faint"}`} />
-      {st ? st.label : "parado"}
+      {st ? tx(st.label) : t("parado")}
     </span>
   );
 }
@@ -289,12 +291,12 @@ export default function Agents() {
 
   return (
     <Page>
-      <PageHeader title="Agentes" sub="Cada canal tem um agente. Todos seguem o padrão, a não ser que você configure um diferente." />
+      <PageHeader title={t("Agentes")} sub={t("Cada canal tem um agente. Todos seguem o padrão, a não ser que você configure um diferente.")} />
 
       <section className="panel flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-[18px]" aria-labelledby="t-pad">
         <div className="flex min-w-0 flex-[1_1_260px] flex-col gap-1">
           <h2 id="t-pad" className="m-0 text-base font-semibold">
-            Padrão pra todos
+            {t("Padrão pra todos")}
           </h2>
           <span className="flex items-center gap-2 text-[13px] text-muted">
             {summaryOf(cfg.model, cfg.effort, cfg)}
@@ -302,50 +304,52 @@ export default function Agents() {
           </span>
         </div>
         <span className="text-[13px] text-muted">
-          {cfg.parallel} {cfg.parallel === 1 ? "agente" : "agentes"} pensando por vez · um navegador por vez, pra proteger as contas.
+          {cfg.parallel === 1
+            ? t("{n} agente pensando por vez · um navegador por vez, pra proteger as contas.", { n: cfg.parallel })
+            : t("{n} agentes pensando por vez · um navegador por vez, pra proteger as contas.", { n: cfg.parallel })}
         </span>
         <button className="btn btn-sec" type="button" onClick={() => setTarget({ kind: "global" })}>
-          Editar padrão
+          {t("Editar padrão")}
         </button>
       </section>
 
-      <Panel id="tasks" title="Tarefas, pra todos os canais" sub="Cada parte do trabalho pode usar um modelo e esforço diferente.">
+      <Panel id="tasks" title={t("Tarefas, pra todos os canais")} sub={t("Cada parte do trabalho pode usar um modelo e esforço diferente.")}>
         <div>
-          {cfg.tasks.map((t, i) => {
-            const own = !!(t.model || t.effort);
+          {cfg.tasks.map((tk, i) => {
+            const own = !!(tk.model || tk.effort);
             return (
-              <div key={t.task} className={ROW}>
+              <div key={tk.task} className={ROW}>
                 <div className="flex min-w-0 items-center gap-3.5">
                   <span aria-hidden className="mono grid size-7 flex-none place-items-center rounded-lg bg-[#1f2125] text-xs text-muted">
                     {i + 1}
                   </span>
                   <div className="flex min-w-0 flex-col">
-                    <span className="font-medium">{t.label}</span>
-                    <span className="truncate text-[13px] text-muted">{TASK_DESC[t.task]}</span>
+                    <span className="font-medium">{tx(tk.label)}</span>
+                    <span className="truncate text-[13px] text-muted">{TASK_DESC[tk.task] ? t(TASK_DESC[tk.task]!) : ""}</span>
                   </div>
                 </div>
                 <span className="flex flex-wrap items-center gap-2 font-medium max-[1100px]:hidden">
-                  {summaryOf(t.model, t.effort, cfg)}
-                  <Badge own={own}>{own ? "ajustado" : "padrão"}</Badge>
+                  {summaryOf(tk.model, tk.effort, cfg)}
+                  <Badge own={own}>{own ? t("ajustado") : t("padrão")}</Badge>
                 </span>
                 <span className="max-[1100px]:hidden" />
-                <button className="btn btn-sec" type="button" onClick={() => setTarget({ kind: "task", task: t })}>
-                  Configurar
+                <button className="btn btn-sec" type="button" onClick={() => setTarget({ kind: "task", task: tk })}>
+                  {t("Configurar")}
                 </button>
               </div>
             );
           })}
         </div>
         <div className="border-t border-line-soft px-5 py-3 text-xs text-dim">
-          Quem manda, do mais forte pro mais fraco: ajuste da tarefa no canal, depois o canal, depois a tarefa, depois o padrão.
+          {t("Quem manda, do mais forte pro mais fraco: ajuste da tarefa no canal, depois o canal, depois a tarefa, depois o padrão.")}
         </div>
       </Panel>
 
-      <Panel id="ags" title="Agentes dos canais" sub="Clique em Configurar pra mudar o agente de um canal.">
+      <Panel id="ags" title={t("Agentes dos canais")} sub={t("Clique em Configurar pra mudar o agente de um canal.")}>
         <div>
           {cfg.channels.map((c) => {
             const own = !!(c.model || c.effort);
-            const adjusted = c.tasks.filter((t) => t.model || t.effort);
+            const adjusted = c.tasks.filter((tk) => tk.model || tk.effort);
             return (
               <div key={c.slug} className={ROW}>
                 <div className="flex min-w-0 items-center gap-3.5">
@@ -358,11 +362,11 @@ export default function Agents() {
                 <div className="flex min-w-0 flex-col gap-1 max-[1100px]:hidden">
                   <span className="flex flex-wrap items-center gap-2 font-medium">
                     {summaryOf(c.model, c.effort, cfg)}
-                    <Badge own={own}>{own ? "próprio" : "padrão"}</Badge>
+                    <Badge own={own}>{own ? t("próprio") : t("padrão")}</Badge>
                   </span>
                   {adjusted.length > 0 && (
                     <span className="text-[13px] text-muted">
-                      {adjusted.map((t) => `${t.label}: ${modelLabel(t.model || c.model || cfg.model)}`).join(" · ")}
+                      {adjusted.map((tk) => `${tx(tk.label)}: ${modelLabel(tk.model || c.model || cfg.model)}`).join(" · ")}
                     </span>
                   )}
                 </div>
@@ -370,7 +374,7 @@ export default function Agents() {
                   <NowCell slug={c.slug} />
                 </span>
                 <button className="btn btn-sec" type="button" onClick={() => setTarget({ kind: "channel", ch: c })}>
-                  Configurar
+                  {t("Configurar")}
                 </button>
               </div>
             );
@@ -378,7 +382,7 @@ export default function Agents() {
         </div>
       </Panel>
 
-      <Dialog open={!!target} onClose={() => setTarget(null)} label="Configurar agente">
+      <Dialog open={!!target} onClose={() => setTarget(null)} label={t("Configurar agente")}>
         {target && <ConfigDialog target={target} cfg={cfg} onClose={() => setTarget(null)} />}
       </Dialog>
     </Page>

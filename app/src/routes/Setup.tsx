@@ -6,9 +6,11 @@ import { keys, useSetup } from "../lib/queries";
 import { Page, PageHeader, Panel } from "../components/ui";
 import { ICheck, ISpin, IX } from "../components/icons";
 import { toast } from "../components/toast";
+import { t, tx } from "../lib/i18n";
+import type { MsgKey } from "../lib/messages";
 
 const TONE: Record<string, string> = { ok: "text-ok", warn: "text-warn", missing: "text-live" };
-const WORD: Record<string, string> = { ok: "ok", warn: "atenção", missing: "faltando" };
+const WORD: Record<string, MsgKey> = { ok: "ok", warn: "atenção", missing: "faltando" };
 
 function Copy({ text }: { text: string }) {
   const [done, setDone] = useState(false);
@@ -26,11 +28,11 @@ function Copy({ text }: { text: string }) {
               setDone(true);
               setTimeout(() => setDone(false), 1500);
             },
-            () => toast("não consegui copiar", "error"),
+            () => toast(t("não consegui copiar"), "error"),
           )
         }
       >
-        {done ? "Copiado" : "Copiar"}
+        {done ? t("Copiado") : t("Copiar")}
       </button>
     </div>
   );
@@ -58,19 +60,19 @@ function Row({ it }: { it: SetupItem }) {
       </span>
       <div className="flex min-w-0 flex-col gap-1.5">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="font-medium">{it.label}</span>
-          <span className={`text-xs ${TONE[it.status]}`}>{WORD[it.status]}</span>
-          <span className="mono min-w-0 truncate text-xs text-dim" title={it.detail}>
+          <span className="font-medium">{tx(it.label)}</span>
+          <span className={`text-xs ${TONE[it.status]}`}>{WORD[it.status] ? t(WORD[it.status]!) : it.status}</span>
+          <span className="mono min-w-0 truncate text-xs text-dim" title={it.detail} dir="auto">
             {it.detail}
           </span>
         </div>
-        <span className="text-sm text-muted">{it.why}</span>
+        <span className="text-sm text-muted">{tx(it.why)}</span>
         {it.status !== "ok" && (it.command || it.fix) && (
           <div className="flex flex-wrap items-center gap-2 pt-1">
             {it.fix && (
               <button type="button" className="btn btn-pri text-xs" disabled={busy} onClick={fix}>
                 {busy ? <ISpin /> : null}
-                Consertar
+                {t("Consertar")}
               </button>
             )}
             {it.command && (
@@ -92,21 +94,21 @@ export default function Setup() {
   const missing = items.filter((i) => i.status === "missing").length;
   const warn = items.filter((i) => i.status === "warn").length;
   const sub = !data
-    ? "Conferindo as ferramentas…"
+    ? t("Conferindo as ferramentas…")
     : missing
-      ? `${missing} item(ns) faltando. Os canais não rodam sem eles.`
+      ? t("{n} item(ns) faltando. Os canais não rodam sem eles.", { n: missing })
       : warn
-        ? `Tudo instalado; ${warn} aviso(s) para olhar.`
-        : "Tudo pronto. Crie um canal e ligue o piloto automático.";
+        ? t("Tudo instalado; {n} aviso(s) para olhar.", { n: warn })
+        : t("Tudo pronto. Crie um canal e ligue o piloto automático.");
   return (
     <Page>
-      <PageHeader title="Primeiros passos" sub={sub}>
+      <PageHeader title={t("Primeiros passos")} sub={sub}>
         <button type="button" className="btn btn-sec" disabled={isFetching} onClick={() => qc.invalidateQueries({ queryKey: keys.setup })}>
           {isFetching ? <ISpin /> : null}
-          Conferir de novo
+          {t("Conferir de novo")}
         </button>
       </PageHeader>
-      <Panel title="Ferramentas e configuração" sub="Depois de instalar algo pelo terminal, feche e abra o app (o PATH novo só vale para processos novos).">
+      <Panel title={t("Ferramentas e configuração")} sub={t("Depois de instalar algo pelo terminal, feche e abra o app (o PATH novo só vale para processos novos).")}>
         <div className="pb-1">
           {items.map((it) => (
             <Row key={it.id} it={it} />

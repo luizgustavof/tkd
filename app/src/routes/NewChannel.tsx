@@ -9,12 +9,14 @@ import { ICheck, ILock, IShield, ISpin, IX } from "../components/icons";
 import { PlatformLogin } from "../components/PlatformLogin";
 import { SchedulePicker } from "../components/SchedulePicker";
 import { toast } from "../components/toast";
+import { t } from "../lib/i18n";
+import type { MsgKey } from "../lib/messages";
 
-const STEPS = ["Nome e estilo", "Contas", "Canais pra estudar", "Quando postar"];
+const STEPS: MsgKey[] = ["Nome e estilo", "Contas", "Canais pra estudar", "Quando postar"];
 
 function Stepper({ at }: { at: number }) {
   return (
-    <ol aria-label="Etapas" className="m-0 flex list-none gap-3 overflow-x-auto p-0">
+    <ol aria-label={t("Etapas")} className="m-0 flex list-none gap-3 overflow-x-auto p-0">
       {STEPS.map((s, i) => {
         const st = i < at ? "done" : i === at ? "now" : "todo";
         return (
@@ -32,7 +34,7 @@ function Stepper({ at }: { at: number }) {
             >
               {st === "done" ? <ICheck size={12} /> : i + 1}
             </b>
-            {s}
+            {t(s)}
             {i < STEPS.length - 1 && <span className="h-px min-w-3 flex-auto bg-line" />}
           </li>
         );
@@ -55,7 +57,7 @@ function StepName({ onDone }: { onDone: (slug: string) => void }) {
   const qc = useQueryClient();
   const [error, action] = useActionState(async (_: string | null, fd: FormData) => {
     const slug = String(fd.get("slug") ?? "").trim().toLowerCase();
-    if (!slug) return "Dê um nome curto pro canal";
+    if (!slug) return t("Dê um nome curto pro canal");
     try {
       const s = await commands.createChannel({ slug, ref_handle: String(fd.get("ref") ?? ""), niche: String(fd.get("niche") ?? "") });
       await qc.invalidateQueries({ queryKey: keys.channels });
@@ -68,25 +70,25 @@ function StepName({ onDone }: { onDone: (slug: string) => void }) {
   return (
     <form action={action} className="flex flex-col gap-4 px-5 pb-5">
       <label className="flex flex-col gap-1.5 text-[13px] font-medium">
-        Nome do canal
-        <input type="text" name="slug" placeholder="ex.: noir" autoComplete="off" pattern="[a-z0-9_\-]+" title="só letras minúsculas, números, - e _" />
-        <span className="text-xs font-normal text-dim">Só letras minúsculas e números. Começar com _ cria um canal de teste, que nunca posta sozinho.</span>
+        {t("Nome do canal")}
+        <input type="text" name="slug" placeholder={t("ex.: noir")} autoComplete="off" pattern="[a-z0-9_\-]+" title={t("só letras minúsculas, números, - e _")} />
+        <span className="text-xs font-normal text-dim">{t("Só letras minúsculas e números. Começar com _ cria um canal de teste, que nunca posta sozinho.")}</span>
       </label>
       <label className="flex flex-col gap-1.5 text-[13px] font-medium">
-        Do que é o canal
-        <textarea name="niche" rows={2} placeholder="ex.: edits sombrios de filmes noir, um personagem por vídeo" />
+        {t("Do que é o canal")}
+        <textarea name="niche" rows={2} placeholder={t("ex.: edits sombrios de filmes noir, um personagem por vídeo")} />
       </label>
       <label className="flex flex-col gap-1.5 text-[13px] font-medium">
-        Canal principal pra estudar
-        <input type="text" name="ref" placeholder="@perfil ou link do TikTok" autoComplete="off" />
-        <span className="text-xs font-normal text-dim">Dá pra adicionar mais depois.</span>
+        {t("Canal principal pra estudar")}
+        <input type="text" name="ref" placeholder={t("@perfil ou link do TikTok")} autoComplete="off" />
+        <span className="text-xs font-normal text-dim">{t("Dá pra adicionar mais depois.")}</span>
       </label>
       {error && <span role="alert" className="text-[13px] text-live">{error}</span>}
       <div className="flex justify-end gap-2.5">
         <Link to="/" className="btn btn-sec">
-          Voltar
+          {t("Voltar")}
         </Link>
-        <Submit>Criar e continuar</Submit>
+        <Submit>{t("Criar e continuar")}</Submit>
       </div>
     </form>
   );
@@ -109,21 +111,21 @@ function StepStudy({ slug }: { slug: string }) {
     <>
       <form action={action} className="flex flex-wrap items-end gap-2 px-5 pb-4">
         <label className="flex flex-[1_1_300px] flex-col gap-1.5 text-[13px] font-medium">
-          Adicionar canal
-          <input type="text" name="handle" placeholder="@perfil ou link do TikTok" className="w-full" autoComplete="off" />
+          {t("Adicionar canal")}
+          <input type="text" name="handle" placeholder={t("@perfil ou link do TikTok")} className="w-full" autoComplete="off" />
         </label>
-        <Submit>Adicionar</Submit>
+        <Submit>{t("Adicionar")}</Submit>
         {error && <span role="alert" className="basis-full text-xs text-live">{error}</span>}
       </form>
       {!data && <Skeleton className="mx-5 mb-4 h-10" />}
       {list.map((h, i) => (
         <div key={h} className="flex items-center gap-4 border-t border-line-soft px-5 py-3.5">
-          <span className="mono flex-1 font-medium">@{h}</span>
-          <span className="text-[13px] text-muted">{i === 0 ? "principal" : "extra"}</span>
+          <span className="mono flex-1 font-medium"><bdi>@{h}</bdi></span>
+          <span className="text-[13px] text-muted">{i === 0 ? t("principal") : t("extra")}</span>
           <button
             className="icon-btn"
             type="button"
-            aria-label={`Remover @${h}`}
+            aria-label={t("Remover @{h}", { h })}
             onClick={async () => {
               await commands.removeInspiration(slug, h).catch((e) => toast(errMsg(e), "error"));
               await qc.invalidateQueries({ queryKey: keys.channel(slug) });
@@ -154,7 +156,7 @@ function StepSchedule({ slug }: { slug: string }) {
   return <SchedulePicker slug={slug} schedule={data.schedule} nextLabel={data.summary.next_post_label} />;
 }
 
-const HEAD: { title: string; sub: string }[] = [
+const HEAD: { title: MsgKey; sub: MsgKey }[] = [
   { title: "Nome e estilo", sub: "Só o básico. O agente descobre o resto estudando as referências." },
   { title: "Onde esse canal posta", sub: "Conecte pelo menos uma. Dá pra adicionar a outra depois." },
   { title: "Canais pra estudar", sub: "O agente baixa os vídeos desses perfis e aprende o estilo deles." },
@@ -172,17 +174,17 @@ export default function NewChannel() {
   });
   const head = HEAD[step]!;
   const footer =
-    step === 1 ? (data?.summary.tiktok ? "TikTok pronto. Pode seguir e terminar o YouTube depois." : "Sem conta, o canal só faz vídeos de teste.") : "";
+    step === 1 ? (data?.summary.tiktok ? t("TikTok pronto. Pode seguir e terminar o YouTube depois.") : t("Sem conta, o canal só faz vídeos de teste.")) : "";
 
   return (
     <div className="flex max-w-[1120px] flex-col gap-7">
       <header className="flex flex-col gap-1.5">
-        <h1 className="m-0 text-2xl font-semibold tracking-[-0.02em]">Novo canal{slug ? `: ${slug}` : ""}</h1>
-        <p className="m-0 max-w-[70ch] text-muted">Quatro passos: nome, contas, canais pra estudar e horários. Dá pra mudar tudo depois na página do canal.</p>
+        <h1 className="m-0 text-2xl font-semibold tracking-[-0.02em]">{slug ? t("Novo canal: {slug}", { slug }) : t("Novo canal")}</h1>
+        <p className="m-0 max-w-[70ch] text-muted">{t("Quatro passos: nome, contas, canais pra estudar e horários. Dá pra mudar tudo depois na página do canal.")}</p>
       </header>
       <Stepper at={step} />
       <div className="flex flex-wrap items-start gap-6">
-        <Panel id="passo" title={head.title} sub={head.sub} className="min-w-0 flex-[3_1_540px]">
+        <Panel id="passo" title={t(head.title)} sub={t(head.sub)} className="min-w-0 flex-[3_1_540px]">
           <div key={step} className="anim-rise">
             {step === 0 && (
               <StepName
@@ -200,51 +202,51 @@ export default function NewChannel() {
             <div className="flex flex-wrap items-center gap-2.5 border-t border-line-soft px-5 py-4">
               <span className="flex-[1_1_240px] text-[13px] text-muted">{footer}</span>
               <button className="btn btn-sec" type="button" onClick={() => setStep(step - 1)} disabled={step === 1}>
-                Voltar
+                {t("Voltar")}
               </button>
               {step < 3 ? (
                 <button className="btn btn-pri" type="button" onClick={() => setStep(step + 1)}>
-                  Continuar
+                  {t("Continuar")}
                 </button>
               ) : (
                 <button
                   className="btn btn-pri"
                   type="button"
                   onClick={() => {
-                    toast(`${slug} criado`);
+                    toast(t("{slug} criado", { slug }));
                     void nav({ to: "/canal/$slug", params: { slug } });
                   }}
                 >
-                  Terminar
+                  {t("Terminar")}
                 </button>
               )}
             </div>
           )}
         </Panel>
         <div className="flex min-w-0 flex-[2_1_320px] flex-col gap-6">
-          <Panel id="como" title="Como funciona">
+          <Panel id="como" title={t("Como funciona")}>
             <div className="px-5 pb-4">
-              {[
+              {([
                 "Você clica em conectar e abre uma janela do Edge que é só desse canal.",
                 "Faz o login normal. Se pedir código, ele chega no seu celular ou email como sempre.",
                 "O tkd percebe que entrou, guarda o @ da conta e a foto, e fecha a janela. Não precisa logar de novo.",
-              ].map((t, i) => (
+              ] as MsgKey[]).map((k, i) => (
                 <div key={i} className="grid grid-cols-[28px_minmax(0,1fr)] items-start gap-3 border-t border-line-soft py-3 text-[13px] text-fg-2 first:border-t-0">
                   <b className="grid size-7 place-items-center rounded-lg bg-[#1f2125] text-xs font-semibold text-muted">{i + 1}</b>
-                  <span>{t}</span>
+                  <span>{t(k)}</span>
                 </div>
               ))}
             </div>
           </Panel>
-          <Panel id="seg" title="Por que uma janela por canal">
+          <Panel id="seg" title={t("Por que uma janela por canal")}>
             <div className="flex flex-col gap-3 px-5 pb-5 text-[13px] text-fg-2">
               <div className="flex items-start gap-2.5">
                 <IShield className="mt-0.5 flex-none text-muted" />
-                <span>As contas de um canal nunca se misturam com as de outro. Antes de postar, o tkd confere se está na conta certa.</span>
+                <span>{t("As contas de um canal nunca se misturam com as de outro. Antes de postar, o tkd confere se está na conta certa.")}</span>
               </div>
               <div className="flex items-start gap-2.5">
                 <ILock className="mt-0.5 flex-none text-muted" />
-                <span>Sua senha nunca passa pelo tkd. O login fica só no seu computador.</span>
+                <span>{t("Sua senha nunca passa pelo tkd. O login fica só no seu computador.")}</span>
               </div>
             </div>
           </Panel>

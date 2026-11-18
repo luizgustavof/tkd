@@ -6,6 +6,7 @@ import { keys } from "../lib/queries";
 import { useLive } from "../lib/live";
 import { ICheck, ISpin, ITikTok, IYouTube } from "./icons";
 import { toast } from "./toast";
+import { t } from "../lib/i18n";
 
 const TIMEOUT_S = 600;
 
@@ -17,7 +18,7 @@ function Clock({ since }: { since: number }) {
   }, []);
   const s = Math.min(TIMEOUT_S, Math.floor((now - since) / 1000));
   const f = (n: number) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, "0")}`;
-  return <span className="mono text-xs text-muted">{f(s)} de {f(TIMEOUT_S)}</span>;
+  return <span className="mono text-xs text-muted">{t("{a} de {b}", { a: f(s), b: f(TIMEOUT_S) })}</span>;
 }
 
 function Check({ state, children }: { state: "done" | "run" | "todo"; children: string }) {
@@ -58,7 +59,7 @@ export function PlatformLogin({ slug, platform, handle, compact = false }: {
     setSince(Date.now());
     try {
       const h = await commands.login(slug, platform);
-      toast(h ? `${name} conectado: @${h}` : `${name}: sessão salva`);
+      toast(h ? t("{name} conectado: @{h}", { name, h }) : t("{name}: sessão salva", { name }));
     } catch (e) {
       const m = errMsg(e);
       if (!m.includes("cancelado")) toast(m, "error");
@@ -84,7 +85,7 @@ export function PlatformLogin({ slug, platform, handle, compact = false }: {
     startLeave(async () => {
       try {
         await commands.logout(slug, platform);
-        toast(`${name}: desconectado de @${handle}`);
+        toast(t("{name}: desconectado de @{h}", { name, h: handle }));
       } catch (e) {
         toast(errMsg(e), "error");
       } finally {
@@ -99,7 +100,7 @@ export function PlatformLogin({ slug, platform, handle, compact = false }: {
     startCheck(async () => {
       try {
         const r = await commands.checkSession(slug, platform);
-        toast(r.logged_in ? `Sessão ativa como @${r.handle}` : `${name}: sessão expirada, conecte de novo`, r.logged_in ? "ok" : "error");
+        toast(r.logged_in ? t("Sessão ativa como @{h}", { h: r.handle }) : t("{name}: sessão expirada, conecte de novo", { name }), r.logged_in ? "ok" : "error");
         await qc.invalidateQueries({ queryKey: keys.channel(slug) });
       } catch (e) {
         toast(errMsg(e), "error");
@@ -117,10 +118,10 @@ export function PlatformLogin({ slug, platform, handle, compact = false }: {
         <div className="flex min-w-0 flex-col">
           <span className="font-semibold">{name}</span>
           {handle ? (
-            <span className="mono truncate text-[13px] text-fg-2">@{handle}</span>
+            <span className="mono truncate text-[13px] text-fg-2"><bdi>@{handle}</bdi></span>
           ) : (
             <span className="text-[13px] text-muted">
-              {platform === "youtube" ? "Shorts, entrando com a conta Google" : "ainda não conectado"}
+              {platform === "youtube" ? t("Shorts, entrando com a conta Google") : t("ainda não conectado")}
             </span>
           )}
         </div>
@@ -128,33 +129,33 @@ export function PlatformLogin({ slug, platform, handle, compact = false }: {
           {waiting ? (
             <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-accent">
               <ISpin size={14} />
-              Esperando login
+              {t("Esperando login")}
             </span>
           ) : handle ? (
             <>
               <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-ok">
                 <span className="size-[7px] rounded-full bg-ok" />
-                conectado
+                {t("conectado")}
               </span>
               <button className="btn btn-sec btn-sm" type="button" onClick={test} disabled={checking}>
-                {checking ? "Conferindo…" : "Testar login"}
+                {checking ? t("Conferindo…") : t("Testar login")}
               </button>
               <button className="btn btn-ghost btn-sm" type="button" onClick={connect}>
-                Trocar conta
+                {t("Trocar conta")}
               </button>
               <button
                 className={`btn btn-sm ${armed ? "btn-danger" : "btn-ghost"}`}
                 type="button"
                 onClick={logout}
                 disabled={leaving}
-                title={`Apaga só a sessão do ${name} deste canal`}
+                title={t("Apaga só a sessão do {name} deste canal", { name })}
               >
-                {leaving ? "Saindo…" : armed ? "Confirmar saída" : "Sair"}
+                {leaving ? t("Saindo…") : armed ? t("Confirmar saída") : t("Sair")}
               </button>
             </>
           ) : (
             <button className="btn btn-pri btn-sm" type="button" onClick={connect}>
-              Conectar {name}
+              {t("Conectar {name}", { name })}
             </button>
           )}
         </div>
@@ -167,25 +168,25 @@ export function PlatformLogin({ slug, platform, handle, compact = false }: {
           <div className="flex flex-col gap-2.5 px-[18px] py-4">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
               <span className="flex-[1_1_260px] font-semibold">
-                Uma janela do Edge abriu. Entre na conta {platform === "youtube" ? "Google" : "do TikTok"} do canal.
+                {platform === "youtube" ? t("Uma janela do Edge abriu. Entre na conta Google do canal.") : t("Uma janela do Edge abriu. Entre na conta do TikTok do canal.")}
               </span>
               <Clock since={started ?? Date.now()} />
             </div>
             <div>
-              <Check state={action ? "done" : "run"}>Janela aberta</Check>
-              <Check state={found ? "done" : action ? "run" : "todo"}>Esperando você entrar</Check>
+              <Check state={action ? "done" : "run"}>{t("Janela aberta")}</Check>
+              <Check state={found ? "done" : action ? "run" : "todo"}>{t("Esperando você entrar")}</Check>
               <Check state={found ? "run" : "todo"}>
-                {platform === "youtube" ? "Achar o canal do YouTube e guardar" : "Guardar o @ da conta e a foto"}
+                {platform === "youtube" ? t("Achar o canal do YouTube e guardar") : t("Guardar o @ da conta e a foto")}
               </Check>
             </div>
             <div className="flex flex-wrap gap-2 pt-0.5">
-              <span className="text-xs text-dim">O tkd percebe sozinho quando você entrar.</span>
+              <span className="text-xs text-dim">{t("O tkd percebe sozinho quando você entrar.")}</span>
               <button
-                className="btn btn-ghost btn-sm ml-auto"
+                className="btn btn-ghost btn-sm ms-auto"
                 type="button"
                 onClick={() => void commands.cancelLogin(slug, platform)}
               >
-                Cancelar
+                {t("Cancelar")}
               </button>
             </div>
           </div>

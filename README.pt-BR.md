@@ -50,6 +50,9 @@ pnpm install
 pnpm tauri build --debug --no-bundle   # gera target/debug/tkd-app.exe
 ```
 
+Idioma da interface: português, inglês ou árabe (da direita pra esquerda), no seletor no rodapé do menu. Traduções
+em [`app/src/lib/messages.ts`](app/src/lib/messages.ts).
+
 Telas: **Canais** (criar, configurar, conectar TikTok/YouTube, horários, observações), **Ao vivo** (o que cada
 agente faz agora, uma linha por live vigiada), **Agentes** (modelo e esforço por tarefa), **Cortes** (tudo que o
 clipper cortou, com prévia, player, filtro e apagar) e **Consumo** (tokens por canal/tarefa).

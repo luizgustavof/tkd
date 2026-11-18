@@ -24,10 +24,10 @@ export const IPlus = ({ size, ...p }: P) => (
   <svg {...base(size, 1.6)} {...p}><path d="M8 3v10M3 8h10" /></svg>
 );
 export const IChevron = ({ size, ...p }: P) => (
-  <svg {...base(size, 1.6)} {...p}><path d="m6 3 5 5-5 5" /></svg>
+  <svg {...base(size, 1.6)} {...p} className={`rtl:-scale-x-100 ${p.className ?? ""}`}><path d="m6 3 5 5-5 5" /></svg>
 );
 export const IBack = ({ size, ...p }: P) => (
-  <svg {...base(size, 1.6)} {...p}><path d="m10 3-5 5 5 5" /></svg>
+  <svg {...base(size, 1.6)} {...p} className={`rtl:-scale-x-100 ${p.className ?? ""}`}><path d="m10 3-5 5 5 5" /></svg>
 );
 export const IX = ({ size, ...p }: P) => (
   <svg {...base(size, 1.6)} {...p}><path d="m4 4 8 8M12 4l-8 8" /></svg>

@@ -6,13 +6,14 @@ import { keys } from "../lib/queries";
 import { toast } from "./toast";
 import { IMoon, IPlus, ISun, ISunrise, ISunset, IX } from "./icons";
 import { Segmented, Switch } from "./ui";
+import { t, tx } from "../lib/i18n";
+import type { MsgKey } from "../lib/messages";
 
 const DAYS = ["seg", "ter", "qua", "qui", "sex", "sab", "dom"] as const;
-const DAY_LABEL: Record<string, string> = { sab: "sáb" };
 const WEEKDAYS = ["seg", "ter", "qua", "qui", "sex"];
 const WEEKEND = ["sab", "dom"];
 
-const PERIODS: { key: string; label: string; range: string; from: number; to: number; def: string; icon: ReactNode }[] = [
+const PERIODS: { key: string; label: MsgKey; range: string; from: number; to: number; def: string; icon: ReactNode }[] = [
   { key: "mad", label: "Madrugada", range: "0–6h", from: 0, to: 6, def: "02:00", icon: <IMoon /> },
   { key: "man", label: "Manhã", range: "6–12h", from: 6, to: 12, def: "09:00", icon: <ISunrise /> },
   { key: "tar", label: "Tarde", range: "12–18h", from: 12, to: 18, def: "15:00", icon: <ISun /> },
@@ -49,12 +50,12 @@ export function SchedulePicker({ slug, schedule, nextLabel }: { slug: string; sc
   const setDays = (d: string[]) => save({ ...opt, days: d.length === 7 ? [] : DAYS.filter((x) => d.includes(x)) });
   const toggleDay = (d: string) => {
     const next = days.includes(d) ? days.filter((x) => x !== d) : [...days, d];
-    if (!next.length) return toast("Deixe pelo menos um dia", "error");
+    if (!next.length) return toast(t("Deixe pelo menos um dia"), "error");
     setDays(next);
   };
-  const removeTime = (t: string) => {
-    if (opt.times.length <= 1) return toast("Deixe pelo menos um horário", "error");
-    save({ ...opt, times: opt.times.filter((x) => x !== t) });
+  const removeTime = (tm: string) => {
+    if (opt.times.length <= 1) return toast(t("Deixe pelo menos um horário"), "error");
+    save({ ...opt, times: opt.times.filter((x) => x !== tm) });
   };
   const perWeek = days.length * opt.times.length;
 
@@ -62,16 +63,16 @@ export function SchedulePicker({ slug, schedule, nextLabel }: { slug: string; sc
     <>
       <fieldset className="m-0 flex min-w-0 flex-col gap-2.5 border-0 px-5 pt-0 pb-[18px]">
         <div className="flex items-center gap-2.5">
-          <legend className="float-left p-0 text-[13px] font-medium text-fg-2">Dias</legend>
-          <span className="ml-auto">
+          <legend className="float-start p-0 text-[13px] font-medium text-fg-2">{t("Dias")}</legend>
+          <span className="ms-auto">
             <Segmented
-              label="Atalhos de dias"
+              label={t("Atalhos de dias")}
               value={preset}
               onChange={(v) => setDays(v === "all" ? [...DAYS] : v === "week" ? WEEKDAYS : WEEKEND)}
               options={[
-                { value: "all", label: "Todo dia" },
-                { value: "week", label: "Úteis" },
-                { value: "end", label: "Fds" },
+                { value: "all", label: t("Todo dia") },
+                { value: "week", label: t("Úteis") },
+                { value: "end", label: t("Fds") },
               ]}
             />
           </span>
@@ -87,7 +88,7 @@ export function SchedulePicker({ slug, schedule, nextLabel }: { slug: string; sc
                     on ? "bg-[#22233d] text-fg after:bg-accent" : "text-dim after:bg-[#2e3036] hover:bg-[#17181b] hover:text-fg"
                   }`}
                 >
-                  {DAY_LABEL[d] ?? d}
+                  {t(d === "sab" ? "sáb" : d)}
                 </span>
               </label>
             );
@@ -96,7 +97,7 @@ export function SchedulePicker({ slug, schedule, nextLabel }: { slug: string; sc
       </fieldset>
 
       <div className="flex flex-col gap-3 border-t border-line-soft px-5 pt-4 pb-[18px]">
-        <span className="text-[13px] font-medium text-fg-2">Horários</span>
+        <span className="text-[13px] font-medium text-fg-2">{t("Horários")}</span>
         <div className="grid grid-cols-2 gap-2">
           {PERIODS.map((p) => {
             const times = opt.times.filter((t) => hourOf(t) >= p.from && hourOf(t) < p.to);
@@ -110,17 +111,17 @@ export function SchedulePicker({ slug, schedule, nextLabel }: { slug: string; sc
               >
                 <div className="flex items-center gap-2">
                   {p.icon}
-                  <span className={`text-[13px] font-semibold ${on ? "text-fg" : "text-fg-2"}`}>{p.label}</span>
-                  <span className={`mono ml-auto text-[11px] ${on ? "text-[#9a9be0]" : "text-[#6f727d]"}`}>{p.range}</span>
+                  <span className={`text-[13px] font-semibold ${on ? "text-fg" : "text-fg-2"}`}>{t(p.label)}</span>
+                  <span className={`mono ms-auto text-[11px] ${on ? "text-[#9a9be0]" : "text-[#6f727d]"}`}>{p.range}</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  {times.map((t) => (
-                    <span key={t} className="inline-flex h-[30px] items-center gap-0.5 rounded-lg bg-accent pr-0.5 pl-2.5 text-sm font-medium text-bg">
-                      <span className="mono">{t}</span>
+                  {times.map((tm) => (
+                    <span key={tm} className="inline-flex h-[30px] items-center gap-0.5 rounded-lg bg-accent pe-0.5 ps-2.5 text-sm font-medium text-bg">
+                      <span className="mono">{tm}</span>
                       <button
                         type="button"
-                        aria-label={`Tirar ${t}`}
-                        onClick={() => removeTime(t)}
+                        aria-label={t("Tirar {t}", { t: tm })}
+                        onClick={() => removeTime(tm)}
                         className="inline-grid size-6 place-items-center rounded-md border-0 bg-transparent text-[#2a2b55] hover:bg-[rgba(14,15,17,.12)] hover:text-bg"
                       >
                         <IX size={12} />
@@ -142,7 +143,7 @@ export function SchedulePicker({ slug, schedule, nextLabel }: { slug: string; sc
                         type="time"
                         defaultValue={p.def}
                         autoFocus
-                        aria-label={`Novo horário (${p.label})`}
+                        aria-label={t("Novo horário ({p})", { p: t(p.label) })}
                         className="!h-[30px] w-[92px] !px-2"
                         onKeyDown={(e) => e.key === "Escape" && setAdding(null)}
                       />
@@ -153,7 +154,7 @@ export function SchedulePicker({ slug, schedule, nextLabel }: { slug: string; sc
                   ) : (
                     <button
                       type="button"
-                      aria-label={`Adicionar horário: ${p.label.toLowerCase()}`}
+                      aria-label={t("Adicionar horário: {p}", { p: t(p.label).toLowerCase() })}
                       onClick={() => setAdding(p.key)}
                       className={`inline-grid ${on ? "size-[30px]" : "size-8"} place-items-center rounded-lg border border-dashed border-line-strong bg-transparent text-dim transition-colors hover:border-accent hover:text-fg`}
                     >
@@ -165,27 +166,27 @@ export function SchedulePicker({ slug, schedule, nextLabel }: { slug: string; sc
             );
           })}
         </div>
-        <span className="text-xs text-dim">Toque no + do período e escolha a hora.</span>
+        <span className="text-xs text-dim">{t("Toque no + do período e escolha a hora.")}</span>
         <label className="flex items-center gap-2.5 pt-0.5 text-[13px] text-fg-2">
           <Switch
-            label="Variar o horário um pouco"
+            label={t("Variar o horário um pouco")}
             checked={opt.jitter_min > 0}
             onChange={(v) => save({ ...opt, jitter_min: v ? 10 : 0 })}
           />
-          <span className="flex-1">Variar o horário um pouco</span>
-          <span className="mono text-xs text-dim">{opt.jitter_min > 0 ? `± ${opt.jitter_min} min` : "exato"}</span>
+          <span className="flex-1">{t("Variar o horário um pouco")}</span>
+          <span className="mono text-xs text-dim">{opt.jitter_min > 0 ? <bdi>{`± ${opt.jitter_min} min`}</bdi> : t("exato")}</span>
         </label>
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)_112px] items-end gap-4 border-t border-line-soft px-5 pt-3.5 pb-[18px]">
         <div className="flex flex-col gap-0.5">
-          <span className="text-[13px] text-muted">Próximo vídeo</span>
-          <span className="text-[15px] font-semibold">{nextLabel}</span>
+          <span className="text-[13px] text-muted">{t("Próximo vídeo")}</span>
+          <span className="text-[15px] font-semibold">{tx(nextLabel)}</span>
           <span className="text-xs text-dim">
-            {perWeek} {perWeek === 1 ? "vídeo" : "vídeos"} por semana
+            {perWeek === 1 ? t("{n} vídeo por semana", { n: perWeek }) : t("{n} vídeos por semana", { n: perWeek })}
           </span>
         </div>
-        <div className="grid h-[26px] grid-cols-7 items-end gap-1" role="img" aria-label={`Semana: ${perWeek} vídeos`}>
+        <div className="grid h-[26px] grid-cols-7 items-end gap-1" role="img" aria-label={t("Semana: {n} vídeos", { n: perWeek })}>
           {DAYS.map((d, i) => {
             const today = (new Date().getDay() + 6) % 7 === i;
             const on = days.includes(d);

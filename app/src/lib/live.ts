@@ -4,6 +4,7 @@
 import { useSyncExternalStore } from "react";
 import { Channel } from "@tauri-apps/api/core";
 import { commands, type EventDto, type LiveBatch } from "./api";
+import { t } from "./i18n";
 
 export type NodeStatus = "run" | "done" | "error" | "wait";
 
@@ -150,7 +151,7 @@ function apply(agents: Record<string, AgentNode>, e: EventDto): Record<string, A
       s.status = statusOf(e.status);
       s.endedAt = e.at;
       s.detail = e.detail;
-      s.log = pushLog(s.log, { at: e.at, text: e.detail || (e.status === "ok" ? "pronto" : "erro"), tone: e.status === "ok" ? "ok" : "error" });
+      s.log = pushLog(s.log, { at: e.at, text: e.detail || (e.status === "ok" ? t("pronto") : t("erro")), tone: e.status === "ok" ? "ok" : "error" });
       // filhos abertos fecham junto
       s.children = s.children.map((c) => (c.status === "run" ? { ...c, status: s.status, endedAt: e.at } : c));
     } else if (e.status === "info" && e.detail) {
