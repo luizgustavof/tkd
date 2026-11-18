@@ -26,6 +26,9 @@ Node 20+, Rust, pnpm, ffmpeg no PATH, Microsoft Edge, CLI `claude` logada.
   `yt-dlp-ejs` na versão certa; sem ele os formatos HD somem). Atualize sempre com esse comando.
 - **venv `tools/rea-video/.venv`** (whisper, streamlink, Scrapling): `pip install -r scripts/requirements.txt` e
   depois `scrapling install`. Ver `docs/SCRAPLING_TODO.md`.
+- **rea-video** (cortes, falas e stems do formato edit): clone o
+  [JuneYaooo/rea-video](https://github.com/JuneYaooo/rea-video) em `tools/rea-video` e rode
+  `pip install -e "tools/rea-video[asr]"` no venv. Os cortes de live funcionam sem ele.
 
 Tudo roda na CPU: o ffmpeg não usa `-hwaccel` nem DirectML.
 

@@ -36,6 +36,9 @@ Node 20+, Rust, pnpm, ffmpeg on PATH, Microsoft Edge, and the `claude` CLI signe
   `yt-dlp-ejs`; without it HD formats disappear).
 - **Project venv** `tools/rea-video/.venv` (Python 3.12):
   `pip install -r scripts/requirements.txt`, then `scrapling install`.
+- **rea-video** (the edit format's shot/speech/stem breakdown): clone
+  [JuneYaooo/rea-video](https://github.com/JuneYaooo/rea-video) into `tools/rea-video` and
+  `pip install -e "tools/rea-video[asr]"` in the venv. Live clips work without it.
 - `npm ci` in `browser/` and `video/`, `pnpm install` in `app/`, then `pnpm tauri build --no-bundle` in `app/`.
 
 Everything runs on the CPU: ffmpeg never uses `-hwaccel` or DirectML.

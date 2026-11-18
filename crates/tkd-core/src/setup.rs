@@ -221,9 +221,15 @@ async fn venv() -> Item {
         return it;
     }
     match version_of(&py, &["-c", "import faster_whisper, streamlink, cv2, numpy, librosa; import sys; print(sys.version.split()[0])"]).await {
+        Ok(v) if !crate::recreate::venv_bin("rea-video").exists() => {
+            // o formato edit (recreate, trilha da ref) chama o `rea-video decompose`; cortes de live nao
+            it.status = Status::Warn;
+            it.detail = format!("Python {v}, sem o rea-video (formato edit nao funciona)");
+            it.command = Some("instalar.bat (baixa e instala o rea-video em tools/rea-video)".into());
+        }
         Ok(v) => {
             it.status = Status::Ok;
-            it.detail = format!("Python {v}");
+            it.detail = format!("Python {v} + rea-video");
         }
         Err(e) => {
             it.status = Status::Warn;

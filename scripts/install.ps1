@@ -142,6 +142,28 @@ if ((Test-Path $venvPy) -or $DryRun) {
     [void](Invoke-Native "baixando o navegador do Scrapling" { & $scrapling install })
 }
 
+# rea-video (github.com/JuneYaooo/rea-video, Apache 2.0): cortes, falas e stems do formato edit.
+# Baixa num commit fixo para dentro de tools\rea-video (ao lado do venv). Se o codigo ja estiver la
+# (copia propria, talvez com patches), nao mexe.
+$reaDir = Join-Path $Root 'tools\rea-video'
+$reaUrl = 'https://github.com/JuneYaooo/rea-video'
+$reaRev = '538eb3a757db94826cb90c4297279e50c5dd0f83'
+if (Test-Path (Join-Path $reaDir 'pyproject.toml')) {
+    Write-Ok "rea-video ja esta em tools\rea-video"
+} elseif ((Test-Path $venvPy) -or $DryRun) {
+    [void](Invoke-Native "baixando o rea-video ($($reaRev.Substring(0,7)))" {
+        git -C $reaDir init -q
+        if ($LASTEXITCODE -eq 0) { git -C $reaDir fetch -q --depth 1 $reaUrl $reaRev }
+        if ($LASTEXITCODE -eq 0) { git -C $reaDir checkout -q FETCH_HEAD }
+    })
+}
+$reaExe = Join-Path $venv 'Scripts\rea-video.exe'
+if (Test-Path $reaExe) {
+    Write-Ok "rea-video instalado no venv"
+} elseif ((Test-Path (Join-Path $reaDir 'pyproject.toml')) -or $DryRun) {
+    [void](Invoke-Native "instalando o rea-video no venv" { & $venvPy -m pip install -q -e "$reaDir[asr]" })
+}
+
 # ------------------------------------------------------------------ 5. pacotes Node
 Write-Step 5 "Pacotes Node (navegador, videos, app)"
 if (Test-Command 'node') {
