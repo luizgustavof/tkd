@@ -99,8 +99,10 @@ Canais com prefixo `_` (ex.: `_example`) ficam fora do piloto e só rodam chamad
 ## Avaliação dos edits
 
 Antes de postar, cada edit passa pelo QA medido (`scripts/qa.py`: loudness, pico, tela parada, legenda) e pela
-review do Claude. O código tem um gancho para um avaliador local opcional (`crates/tkd-core/src/local_eval.rs`);
-ele **não faz parte deste repositório** e, sem ele, a review segue só com o QA e o Claude.
+review do Claude. Dá para ligar **o seu próprio modelo local**: qualquer comando que recebe o mp4 e imprime uma
+nota em JSON (`[evaluator]` no `tkd.toml`, protocolo em [`docs/EVALUATOR.md`](docs/EVALUATOR.md)). Nota clara
+decide sozinha; nota duvidosa vai para o Claude junto com a avaliação do modelo. O tkd não traz modelo nenhum; sem
+ele, a review segue só com o QA e o Claude.
 
 ## Avisos
 

@@ -4,7 +4,7 @@
 //!   ao vivo (no maximo `max_watch()` lives ao mesmo tempo: e pesado na CPU);
 //! - fila: cortes das ultimas `MAX_AGE_H` horas dos streamers do canal, maior nota do momento
 //!   primeiro, sem repetir;
-//! - avaliacao SEM o modelo local (a v4 so conhece edits): barreira tecnica medida no ffmpeg e,
+//! - avaliacao SEM o modelo local (ele so avalia edits): barreira tecnica medida no ffmpeg e,
 //!   pros que passam, o Claude com transcricao + chat + quadros (nota, titulo, legenda, recorte);
 //! - o resultado vira uma Spec comum (mp4 em out/renders/<id>.mp4) e segue pra review/publish,
 //!   com credito ao streamer na legenda.

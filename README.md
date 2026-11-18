@@ -106,8 +106,10 @@ What comes next: [`ROADMAP.md`](ROADMAP.md).
 ## Edit review
 
 Before posting, every edit goes through measured QA (`scripts/qa.py`: loudness, peaks, frozen frames, captions) and
-a Claude review. The code has a hook for an optional local video-scoring model (`crates/tkd-core/src/local_eval.rs`);
-that model is **not part of this repository**, and without it the review uses QA + Claude only.
+a Claude review. You can also plug in **your own local video-scoring model**: any command that takes the mp4 and
+prints a JSON score (`[evaluator]` in `tkd.toml`, protocol in [`docs/EVALUATOR.md`](docs/EVALUATOR.md)). Clear
+scores decide alone, doubtful ones go to Claude with the model's notes. No model ships with tkd; without one the
+review uses QA + Claude only.
 
 ## Warnings
 

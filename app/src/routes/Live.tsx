@@ -12,6 +12,7 @@ const TOOL_LABEL: Record<string, string> = {
   remotion: "Remotion",
   ffmpeg: "ffmpeg",
   python: "Python",
+  local: "Modelo local",
 };
 
 function StatusIcon({ s }: { s: NodeStatus }) {
