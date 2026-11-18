@@ -2,11 +2,9 @@
 
 > [English](README.md) · **Português**
 
-<p align="center">
-  <a href="docs/media/trailer.mp4"><img src="docs/media/trailer.gif" alt="trailer do tkd: criando um canal no app" width="800"></a>
-  <br>
-  <sub><a href="docs/media/trailer.mp4">Ver o trailer de 54 s (com som)</a></sub>
-</p>
+https://github.com/user-attachments/assets/f7ce3f47-0e3a-4dbc-a413-65faa2ea2646
+
+<p align="center"><sub>O vídeo não abriu? <a href="https://streamable.com/rvi1hf">Ver o trailer de 54 s no Streamable</a></sub></p>
 
 App em Rust (CLI `tkd` + app desktop Tauri) que roda canais de vídeo curto sozinho. Cada canal é um agente com
 memória própria, conta própria (um perfil do Edge por canal) e horários de post próprios.
@@ -137,3 +135,9 @@ Dependências com licença própria, que valem à parte:
 - **Modelos e serviços** (Claude, whisper, ElevenLabs): cada um com os próprios termos.
 - **Plataformas**: a automação de post contraria os termos do TikTok (ver Avisos). Vídeo de terceiro (footage,
   live) segue os direitos de quem fez.
+
+## Isenção de responsabilidade
+
+O tkd é fornecido como está, sem garantia. Usar a ferramenta é por sua conta e risco: você é o único responsável
+pelas suas contas, pelo que é postado e por respeitar os termos de cada plataforma e os direitos de quem fez o
+conteúdo. Os autores não respondem por banimento, strike, perda de conta ou qualquer outra consequência do uso.
