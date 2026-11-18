@@ -256,26 +256,38 @@ pub fn parse_output(stdout: &str) -> Result<LocalEval> {
 }
 
 pub async fn evaluate(cfg: &EvaluatorCfg, mp4: &Path, caption: &str) -> Result<LocalEval> {
-    let prog = available(cfg).map_err(|e| anyhow::anyhow!(e))?;
+    evaluate_in(cfg, mp4, caption, &crate::config::root()).await
+}
+
+/// `evaluate` com a pasta do projeto explicita (os testes nao dependem da raiz global).
+async fn evaluate_in(cfg: &EvaluatorCfg, mp4: &Path, caption: &str, root: &Path) -> Result<LocalEval> {
+    if !cfg.enabled() {
+        anyhow::bail!("nenhum avaliador configurado ([evaluator] no tkd.toml)");
+    }
+    let prog = resolve_program(&cfg.command[0], root)
+        .ok_or_else(|| anyhow::anyhow!("programa do avaliador nao encontrado: {}", cfg.command[0]))?;
     let slots = eval_slots(cfg.parallel);
     if slots.available_permits() == 0 {
         tracing::info!("avaliador {}: fila cheia, {} esperando", cfg.name, mp4.display());
     }
     let _slot = slots.acquire().await.context("fila do avaliador fechada")?;
-    let root = crate::config::root();
     let started = std::time::Instant::now();
-    let out = tokio::process::Command::new(prog)
-        .args(expand(&cfg.command[1..], mp4, caption, &root))
+    let mut cmd = tokio::process::Command::new(prog);
+    cmd.args(expand(&cfg.command[1..], mp4, caption, root))
         .env("TKD_EVAL_VIDEO", mp4)
         .env("TKD_EVAL_CAPTION", caption)
         .env("PYTHONUTF8", "1")
         .env("PYTHONIOENCODING", "utf-8")
-        .current_dir(&root)
-        .stdin(std::process::Stdio::null())
+        .stdin(std::process::Stdio::null());
+    // caminhos relativos do `command` valem a partir da pasta do projeto (sem ela, nunca herdar uma pasta
+    // atual que pode ter sumido: o Windows recusa criar o processo, erro 267)
+    let cwd = if root.is_dir() { root.to_path_buf() } else { std::env::temp_dir() };
+    cmd.current_dir(&cwd);
+    let out = cmd
         // teto: um avaliador travado segurava uma vaga da fila para sempre
         .tree_output_timeout(std::time::Duration::from_secs(cfg.timeout_min.max(1) * 60))
         .await
-        .with_context(|| format!("rodando o avaliador {}", cfg.name))?;
+        .with_context(|| format!("rodando o avaliador {} ({} em {})", cfg.name, cfg.command[0], cwd.display()))?;
     if !out.status.success() {
         let err = String::from_utf8_lossy(&out.stderr);
         anyhow::bail!("avaliador {} falhou: {}", cfg.name, err.lines().rev().take(3).collect::<Vec<_>>().join(" | "));
@@ -361,11 +373,12 @@ mod tests {
             eprintln!("sem python no PATH: pulado");
             return;
         }
+        let root = std::env::temp_dir();
         let ok = py("import sys, json; print('log'); print(json.dumps({'overall': 7.5, 'summary': sys.argv[1]}))");
-        let ev = evaluate(&ok, Path::new("video.mp4"), "oi").await.unwrap();
+        let ev = evaluate_in(&ok, Path::new("video.mp4"), "oi", &root).await.unwrap();
         assert_eq!((ev.score(), ev.summary.as_str(), ev.model.as_str()), (7.5, "video.mp4", "teste"));
         let fails = py("import sys; print('quebrou', file=sys.stderr); sys.exit(3)");
-        let e = evaluate(&fails, Path::new("v.mp4"), "").await.unwrap_err().to_string();
+        let e = format!("{:#}", evaluate_in(&fails, Path::new("v.mp4"), "", &root).await.unwrap_err());
         assert!(e.contains("quebrou"), "{e}");
     }
 

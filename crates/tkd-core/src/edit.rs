@@ -11,8 +11,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-/// Banco minimo de um personagem antes de montar o edit.
-const MIN_IMAGE_CLIPS: usize = 8;
+/// Banco minimo de um personagem antes de montar o edit (clipes de imagem, contando os que tem fala).
+/// Abaixo disso o edit vira loop (18/11: 2-6 clipes deram 87-90 planos repetidos e 3 reprovacoes seguidas).
+const MIN_IMAGE_CLIPS: usize = crate::recreate::MIN_DISTINCT_CLIPS;
+/// Personagens tentados por edit quando o banco do primeiro nao chega ao minimo (cada um busca footage).
+const MAX_CHARACTER_TRIES: usize = 2;
 const MIN_SPEECH_CLIPS: usize = 3;
 /// Referencias usadas nos ultimos N edits nao se repetem.
 const REF_COOLDOWN: usize = 3;
@@ -42,6 +45,11 @@ fn save_log(ch: &Channel, l: &[LogEntry]) -> Result<()> {
 
 /// Personagem do proximo edit: o que apareceu menos (empate: o que esta ha mais tempo sem sair).
 pub fn pick_character(ch: &Channel) -> Result<String> {
+    Ok(characters_in_order(ch)?.into_iter().next().unwrap_or_default())
+}
+
+/// Personagens na ordem da rotacao (o primeiro e o `pick_character`).
+fn characters_in_order(ch: &Channel) -> Result<Vec<String>> {
     anyhow::ensure!(
         !ch.characters.is_empty(),
         "[{}] canal de edit sem personagens: adicione em Editar canal > Personagens",
@@ -50,13 +58,9 @@ pub fn pick_character(ch: &Channel) -> Result<String> {
     let log = load_log(ch);
     let uses = |c: &str| log.iter().filter(|e| e.character.eq_ignore_ascii_case(c)).count();
     let last = |c: &str| log.iter().rposition(|e| e.character.eq_ignore_ascii_case(c)).map(|i| i as i64).unwrap_or(-1);
-    let pick = ch
-        .characters
-        .iter()
-        .min_by_key(|c| (uses(c), last(c)))
-        .cloned()
-        .unwrap_or_default();
-    Ok(pick)
+    let mut order = ch.characters.clone();
+    order.sort_by_key(|c| (uses(c), last(c)));
+    Ok(order)
 }
 
 fn bank_counts(ch: &Channel, character: &str) -> (usize, usize) {
@@ -264,9 +268,28 @@ pub async fn make_edit(ch: &Channel, store: &Store) -> Result<Spec> {
 }
 
 async fn make_inner(ch: &Channel, store: &Store, span: &crate::events::Span) -> Result<Spec> {
-    let character = pick_character(ch)?;
-    span.action(&format!("Juntando clipes e falas de {character}"), "python");
-    let (img, speech_line) = ensure_bank(ch, store, &character).await?;
+    // banco pequeno demais vira edit em loop: passa para o proximo da rotacao (que tambem busca footage)
+    let mut skipped: Vec<String> = vec![];
+    let mut chosen = None;
+    for character in characters_in_order(ch)?.into_iter().take(MAX_CHARACTER_TRIES) {
+        span.action(&format!("Juntando clipes e falas de {character}"), "python");
+        let why = match ensure_bank(ch, store, &character).await {
+            Ok((img, speech_line)) => {
+                let image = crate::recreate::character_clips(ch, &character);
+                if image >= MIN_IMAGE_CLIPS {
+                    chosen = Some((character, img, speech_line));
+                    break;
+                }
+                format!("{image} clipes de imagem (minimo {MIN_IMAGE_CLIPS})")
+            }
+            Err(e) => format!("{e:#}"),
+        };
+        tracing::warn!("[{}] {character} fica para depois: {why}", ch.slug);
+        skipped.push(format!("{character}: {why}"));
+    }
+    let Some((character, img, speech_line)) = chosen else {
+        anyhow::bail!("[{}] nenhum personagem com banco suficiente para um edit: {}", ch.slug, skipped.join("; "));
+    };
     let reference = pick_reference(ch)?;
     tracing::info!("[{}] edit de {character} ({img} clipes, {speech_line} falas) na estrutura da ref {reference}", ch.slug);
 
@@ -490,6 +513,7 @@ mod tests {
         let log = vec![LogEntry { id: "1".into(), character: "A".into(), reference: "r".into(), at: "t".into(), run: String::new() }];
         save_log(&ch, &log).unwrap();
         assert_eq!(pick_character(&ch).unwrap(), "B");
+        assert_eq!(characters_in_order(&ch).unwrap(), vec!["B", "A"]);
         let _ = std::fs::remove_dir_all(dir);
     }
 }

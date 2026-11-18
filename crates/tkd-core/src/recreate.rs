@@ -200,11 +200,55 @@ fn clean_word(w: &str) -> String {
 
 /// Erros do plano que o codigo confere contra dados reais (catalogo por frame e falas transcritas) e devolve ao
 /// agente para corrigir. Nada aqui e regra de estilo: so o que da para provar errado.
-fn check_plan(out: &Value, bank: &[footage::Clip], character: Option<&str>, fps: f64, ref_speech: &[(f64, f64)]) -> Vec<String> {
+/// Um mesmo clipe nao pode passar disso dos planos (o edit vira loop do mesmo plano).
+const MAX_CLIP_SHARE: f64 = 0.25;
+/// Clipes distintos que um edit precisa (ou todos os do personagem, se o banco tiver menos).
+pub const MIN_DISTINCT_CLIPS: usize = 8;
+
+/// Variedade da montagem. Em 18/11 tres edits seguidos foram reprovados por loop: 87-90 planos tirados de
+/// 4-5 clipes, um deles repetido 38 vezes. `want` = clipes distintos exigidos (0 = nao confere).
+fn check_variety(shots: &[Value], want: usize) -> Vec<String> {
+    let mut errs = vec![];
+    if want == 0 || shots.len() < 4 {
+        return errs;
+    }
+    let mut uses: HashMap<&str, usize> = HashMap::new();
+    for s in shots {
+        *uses.entry(s["src"].as_str().unwrap_or_default()).or_default() += 1;
+    }
+    let want = want.min(shots.len());
+    if uses.len() < want {
+        errs.push(format!(
+            "variedade: {} planos com so {} clipes diferentes; use pelo menos {want} clipes distintos do personagem              (o catalogo tem mais) e espalhe os cortes entre eles",
+            shots.len(),
+            uses.len()
+        ));
+    }
+    let cap = ((shots.len() as f64 * MAX_CLIP_SHARE).ceil() as usize).max(3);
+    let mut heavy: Vec<(&str, usize)> = uses.into_iter().filter(|(_, n)| *n > cap).collect();
+    heavy.sort_by(|a, b| b.1.cmp(&a.1));
+    for (src, n) in heavy {
+        errs.push(format!(
+            "variedade: {src} aparece em {n} de {} planos (maximo {cap}); troque parte desses cortes por outros clipes",
+            shots.len()
+        ));
+    }
+    errs
+}
+
+fn check_plan(
+    out: &Value,
+    bank: &[footage::Clip],
+    character: Option<&str>,
+    fps: f64,
+    ref_speech: &[(f64, f64)],
+    min_distinct: usize,
+) -> Vec<String> {
     let mut errs = vec![];
     let plan = &out["plan"];
     let clip = |src: &str| bank.iter().find(|c| c.file == src);
     let shots = plan["shots"].as_array().cloned().unwrap_or_default();
+    errs.extend(check_variety(&shots, min_distinct));
     // trecho do clipe (s) que o plano mostra entre os frames [a, b) do edit
     let window = |s: &Value, a: f64, b: f64| {
         let (from, rate) = (s["from"].as_f64().unwrap_or(0.0), s["rate"].as_f64().unwrap_or(1.0));
@@ -546,7 +590,7 @@ pub async fn recreate(ch: &Channel, o: Opts) -> Result<PathBuf> {
     span.finish(r, |p| p.display().to_string())
 }
 
-fn character_clips(ch: &Channel, name: &str) -> usize {
+pub fn character_clips(ch: &Channel, name: &str) -> usize {
     let known = footage::known_names(ch);
     footage::load_bank(ch).iter().filter(|c| c.usable && footage::is_character(c, Some(name), &known)).count()
 }
@@ -605,6 +649,7 @@ async fn recreate_inner(ch: &Channel, o: Opts) -> Result<PathBuf> {
         } else {
             o.script.clone()
         };
+        let min_distinct = o.character.as_deref().map(|p| character_clips(ch, p).min(MIN_DISTINCT_CLIPS)).unwrap_or(0);
         let example = read(&root().join("agents/recreate_example.json"));
         let handle = if ch.post_handle.is_empty() { ch.slug.clone() } else { ch.post_handle.clone() };
         let rea_report = slim_report(&adir)?;
@@ -638,12 +683,13 @@ async fn recreate_inner(ch: &Channel, o: Opts) -> Result<PathBuf> {
             ("quality", read(&root().join("docs").join("QUALITY_RULES.md"))),
             ("lang", o.lang.clone()),
             ("voice_mode", o.voice.clone()),
+            ("min_clips", min_distinct.max(1).to_string()),
         ]);
         let prompt = agent::render_template("recreate.md", &vars)?;
         let bank = footage::load_bank(ch);
         let ref_speech = ref_speech_windows(&measure, end_s);
         let (v, left) = agent::ask_json_checked(ch, "recreate", &prompt, &["Read", "Glob"], 1500, 2, 2, |v: &Value| {
-            check_plan(v, &bank, o.character.as_deref(), fps, &ref_speech)
+            check_plan(v, &bank, o.character.as_deref(), fps, &ref_speech, min_distinct)
         })
         .await?;
         for e in &left {
@@ -847,9 +893,27 @@ mod tests {
         assert_eq!(w, vec![(0.2, 6.54), (13.85, 19.84)]);
         // plano com fala so no 1o trecho: erro no 2o
         let plan = json!({"plan": {"shots": [], "voiceClips": []}});
-        let e = check_plan(&plan, &[], None, 30.0, &w);
+        let e = check_plan(&plan, &[], None, 30.0, &w, 0);
         assert_eq!(e.len(), 2, "{e:?}");
         assert!(e[1].contains("13.8-19.8s"));
+    }
+
+    #[test]
+    fn plan_needs_variety() {
+        let shots = |srcs: &[(&str, usize)]| -> Vec<Value> {
+            srcs.iter().flat_map(|(s, n)| std::iter::repeat_n(json!({"src": s}), *n)).collect()
+        };
+        // o edit do Naoya de 18/11: 87 planos de 4 clipes, um repetido 38 vezes
+        let naoya = shots(&[("a", 38), ("b", 23), ("c", 16), ("d", 10)]);
+        let e = check_variety(&naoya, 8);
+        assert!(e[0].contains("so 4 clipes"), "{e:?}");
+        assert!(e.iter().any(|x| x.contains("a aparece em 38")) && e.len() == 3, "{e:?}");
+        // banco pequeno: exige so o que existe; espalhado sem clipe dominante passa
+        let ok = shots(&[("a", 10), ("b", 10), ("c", 10), ("d", 10), ("e", 10)]);
+        assert!(check_variety(&ok, 5).is_empty());
+        assert!(check_variety(&naoya, 0).is_empty());
+        // poucos planos: nao cobra mais clipes do que planos
+        assert!(check_variety(&shots(&[("a", 1), ("b", 1), ("c", 1), ("d", 1)]), 8).is_empty());
     }
 
     #[test]
@@ -876,17 +940,17 @@ mod tests {
         // Gojo no trecho 0-0.5 s, rosto do Toji sob a fala so-audio, palavra inexistente
         let bad = plan(json!([{"src": "gojo.mp4", "from": 0, "to": 15, "startAt": 0.0},
                               {"src": "toji_face.mp4", "from": 15, "to": 60, "startAt": 0.0}]), json!(["funn"]));
-        let e = check_plan(&bad, &bank, Some("Toji Fushiguro"), 30.0, &[]);
+        let e = check_plan(&bad, &bank, Some("Toji Fushiguro"), 30.0, &[], 0);
         assert_eq!(e.len(), 3, "{e:?}");
         assert!(e[0].contains("Satoru Gojo") && e.iter().any(|x| x.contains("rosto de Toji")) && e.iter().any(|x| x.contains("funn")));
         // corrigido: trecho do clipe sem o Gojo, costas sob a fala, titulo pela palavra certa
         let good = plan(json!([{"src": "gojo.mp4", "from": 0, "to": 15, "startAt": 1.1},
                                {"src": "costas.mp4", "from": 15, "to": 60, "startAt": 0.0}]), json!(["fun"]));
-        assert!(check_plan(&good, &bank, Some("Toji Fushiguro"), 30.0, &[]).is_empty());
+        assert!(check_plan(&good, &bank, Some("Toji Fushiguro"), 30.0, &[], 0).is_empty());
         // clipe inventado e fala que o clipe nao tem: erros que o agente recebe para corrigir (G2 do CHAOS.md)
         let ghost = json!({"plan": {"shots": [{"src": "nao_existe.mp4", "from": 0, "to": 60, "startAt": 0.0}],
             "voiceClips": [{"src": "fala.mp4", "line": 7, "at": 0}, {"src": "sumiu.mp4", "line": 0, "at": 0}]}});
-        let e = check_plan(&ghost, &bank, Some("Toji Fushiguro"), 30.0, &[]);
+        let e = check_plan(&ghost, &bank, Some("Toji Fushiguro"), 30.0, &[], 0);
         assert_eq!(e.len(), 3, "{e:?}");
         assert!(e[0].contains("nao_existe.mp4") && e[1].contains("nao tem fala 7") && e[2].contains("sumiu.mp4"));
     }
