@@ -1,0 +1,7 @@
+# Acesso web anonimo (scripts/web.py, scripts/tiktok_web.py). Instalar no venv do tkd:
+#   tools/rea-video/.venv/Scripts/pip install -r scripts/requirements-web.txt
+#   tools/rea-video/.venv/Scripts/scrapling install
+# Versao fixa de proposito: auditada em 17/11/2026 (docs/SCRAPLING_TODO.md). Subir so depois de reauditar.
+scrapling[fetchers]==0.5.1
+curl_cffi==0.17.0
+patchright==1.64.4

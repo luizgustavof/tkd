@@ -1,0 +1,32 @@
+# Canal de exemplo. Copie a pasta para channels/<slug>/ e troque o slug, ou crie o canal pelo app.
+# Canais com "_" no comeco ficam fora do piloto automatico.
+slug = "_example"
+format = "clips"             # "clips" (cortes de live) ou "edit" (edits com footage)
+post_handle = ""            # @ da conta que posta; o upload aborta se o logado for outro
+composition = "canal"
+niche = "Cortes de lives de streamers jogando o jogo X"
+persona = "Cortes curtos e engracados da gameplay, com legenda minimalista que nao tapa o jogo"
+hashtags = ["#jogo", "#clips"]
+brand = ""                   # marca no video; vazio = 1o pedaco do slug em maiusculas
+edit_lang = "auto"
+paused = true
+
+# so no formato cortes
+streamers = ["https://www.twitch.tv/streamer_a", "https://kick.com/streamer_b"]
+games = ["Nome do Jogo"]     # categoria da live precisa bater (GTA V != GTA VI)
+
+# so no formato edit
+ref_handle = ""              # perfil de referencia para estudar
+inspirations = []
+characters = []
+
+[schedule]
+days = []                    # vazio = todo dia; ou ["seg", "qua", "sex"]
+times = ["12:00", "18:00", "21:00"]
+jitter_min = 10              # desvio aleatorio (min) em volta de cada horario
+
+# observacoes do dono: entram no prompt do Claude (once = true: so na proxima vez)
+[[notes]]
+text = "prefira momentos com reacao forte do streamer"
+created_at = "2026-01-01T00:00:00+00:00"
+once = false

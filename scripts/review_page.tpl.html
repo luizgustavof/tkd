@@ -1,0 +1,249 @@
+<title>Revisão do Dataset de Edits</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: mesa de revisão — barra de filtros fixa, uma coluna de fichas por vídeo, faixa de frames como "película" no topo de cada ficha */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --fg:#15181d; --muted:#5d6573; --line:#dde2ea;
+  --accent:#2f5bd3; --accent-soft:#e6ecfb;
+  --ok:#1f8a4c; --warn:#b7791f; --bad:#c2372e; --chip:#eef1f5;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --body:"Inter",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1216; --surface:#171b21; --fg:#e6e9ee; --muted:#98a1b0; --line:#2a313b;
+  --accent:#86a2ff; --accent-soft:#1d2741; --ok:#4cc27e; --warn:#e2a63b; --bad:#f06a60; --chip:#222831; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1216; --surface:#171b21; --fg:#e6e9ee; --muted:#98a1b0; --line:#2a313b;
+  --accent:#86a2ff; --accent-soft:#1d2741; --ok:#4cc27e; --warn:#e2a63b; --bad:#f06a60; --chip:#222831; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:14px/1.5 var(--body);margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+header .wrap{padding-block:14px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+h1{font:700 20px/1.2 var(--display);margin:0;letter-spacing:-.01em}
+.progress{font:600 13px var(--mono);color:var(--muted)}
+.progress b{color:var(--fg)}
+.bar{flex:1 1 160px;height:6px;background:var(--chip);border-radius:3px;overflow:hidden;min-width:120px}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.filters{display:flex;flex-wrap:wrap;gap:8px;width:100%}
+select,textarea,input{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px}
+select{padding:5px 8px}
+select:focus-visible,textarea:focus-visible,input:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.notice{margin:16px 0 0;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--accent-soft);font-size:13px}
+.list{display:grid;gap:18px;margin-top:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.film{overflow-x:auto;background:#000;border-bottom:1px solid var(--line)}
+.film img{display:block;height:120px;max-width:none}
+.body{padding:14px 16px;display:grid;gap:12px}
+.top{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline}
+.creator{font:600 15px var(--display);color:var(--accent);text-decoration:none}
+.creator:hover{text-decoration:underline}
+.franchise{font-weight:600}
+.msg{font-size:15px;margin:0;max-width:75ch;text-wrap:pretty}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--muted)}
+.chip.type{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.chip.low{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn);font-weight:600}
+.metrics{display:flex;flex-wrap:wrap;gap:4px 16px;font:12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.metrics b{color:var(--fg);font-weight:600}
+.metrics .hot{color:var(--bad)}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px}
+@media (max-width:760px){.cols{grid-template-columns:minmax(0,1fr)}}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font:600 11px var(--body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0 6px 6px}
+td{padding:4px 6px;border-top:1px solid var(--line);vertical-align:top}
+td.n{font:600 13px var(--mono);text-align:center;width:44px;font-variant-numeric:tabular-nums}
+td.why{color:var(--muted);font-size:12px}
+tr.overall td{border-top:2px solid var(--fg)}
+tr.overall td.lbl{font-weight:700}
+td.you{width:60px}
+td.you input{width:52px;padding:3px 4px;text-align:center;font:600 13px var(--mono)}
+td.you input.changed{border-color:var(--accent);background:var(--accent-soft)}
+h3{font:600 11px var(--body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 6px}
+.issues{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.issue{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;padding:6px 8px;border-left:3px solid var(--muted);background:var(--bg);border-radius:0 6px 6px 0;font-size:13px}
+.issue.alta{border-color:var(--bad)} .issue.media{border-color:var(--warn)} .issue.baixa{border-color:var(--muted)}
+.issue.good{border-color:var(--ok)}
+.tc{font:600 12px var(--mono);color:var(--fg);white-space:nowrap}
+.fix{color:var(--muted);font-size:12px}
+.quote{font-size:12px;color:var(--muted);margin:4px 0 0;padding-left:10px;border-left:2px solid var(--line)}
+.review{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;border-top:1px solid var(--line);padding-top:12px}
+@media (max-width:560px){.review{grid-template-columns:minmax(0,1fr)}}
+textarea{width:100%;min-height:58px;padding:8px;resize:vertical}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button{font:600 13px var(--body);padding:7px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+button[aria-pressed="true"].agree{background:var(--ok);border-color:var(--ok);color:#fff}
+button[aria-pressed="true"].adjust{background:var(--accent);border-color:var(--accent);color:#fff}
+.saved{font:12px var(--mono);color:var(--muted);min-width:70px}
+.empty{color:var(--muted);padding:24px 0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header><div class="wrap">
+  <h1>Revisão do Dataset de Edits</h1>
+  <span class="progress"><b id="done">0</b> / <span id="total">0</span> revisados</span>
+  <div class="bar" aria-hidden="true"><i id="barfill"></i></div>
+  <div class="filters">
+    <label class="sr" for="f-type" hidden>Tipo de edit</label>
+    <select id="f-type" aria-label="Tipo de edit"><option value="">Todos os tipos</option></select>
+    <select id="f-status" aria-label="Status da revisão">
+      <option value="">Todos</option><option value="pending">Não revisados</option>
+      <option value="agree">Concordei</option><option value="adjust">Ajustei</option>
+    </select>
+    <select id="f-sort" aria-label="Ordenar">
+      <option value="overall-desc">Nota do Claude ↓</option><option value="overall-asc">Nota do Claude ↑</option>
+      <option value="views-desc">Views ↓</option><option value="like-desc">Like rate ↓</option>
+    </select>
+  </div>
+</div></header>
+
+<main class="wrap">
+  <p class="notice" id="notice">Cada ficha traz a análise do Claude. Mude a nota na coluna <b>Você</b> quando discordar, escreva o porquê e marque <b>Concordo</b> ou <b>Ajustei</b>. Tudo é salvo sozinho e o Claude lê daqui para corrigir o dataset.</p>
+  <div class="list" id="list"></div>
+</main>
+
+<script>
+const DATA = /*DATA*/[];
+const NAMES = {hook:"Hook (0–1.5 s)",pacing:"Ritmo",audio_sync:"Sincronia com o áudio",visual_quality:"Qualidade visual",
+  motion_fx:"Motion / efeitos",character_focus:"Foco no personagem",narrative:"Narrativa / arco",
+  text_typography:"Texto / tipografia",music_choice:"Escolha da música",overall:"Nota geral"};
+const TYPES = {character_hype:"Hype de personagem",narrative_arc:"Arco narrativo",tribute_sad:"Tributo / emoção",
+  aesthetic_mood:"Estética / clima",meme_humor:"Meme / humor",fight_showcase:"Luta",quote_monologue:"Monólogo / frase",
+  product_hype:"Hype de produto",corecore:"Corecore",real_moment:"Evento real"};
+const reviews = {};   // id -> {scores, notes, status}
+let db = null;
+
+const $ = (s, el=document) => el.querySelector(s);
+const fmtViews = v => v >= 1e6 ? (v/1e6).toFixed(1).replace(".0","")+"M" : v >= 1e3 ? Math.round(v/1e3)+"k" : String(v);
+const tc = t => { const f = s => { const m = Math.floor(s/60), r = s - m*60; return m+":"+r.toFixed(1).padStart(4,"0"); }; return f(t[0])+"–"+f(t[1]); };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function card(d){
+  const t = d.tags, r = reviews[d.id] || {};
+  const rows = Object.entries(d.scores).map(([k,s]) => {
+    const mine = r.scores && r.scores[k] != null ? r.scores[k] : "";
+    return `<tr class="${k==="overall"?"overall":""}"><td class="lbl">${NAMES[k]||k}<div class="why">${esc(s.why)}</div></td>
+      <td class="n">${s.v}</td>
+      <td class="you"><input id="s-${d.id}-${k}" data-k="${k}" type="number" min="0" max="10" step="0.5" inputmode="decimal" value="${mine}" placeholder="${s.v}" aria-label="Sua nota: ${NAMES[k]||k}" class="${mine!==""&&Number(mine)!==s.v?"changed":""}"></td></tr>`;
+  }).join("");
+  const iss = d.issues.map(i => `<li class="issue ${esc(i.severity)}"><span class="tc">${tc(i.t)}</span><span>${esc(i.what)}<div class="fix">→ ${esc(i.fix)}</div></span></li>`).join("");
+  const str = d.strengths.map(i => `<li class="issue good"><span class="tc">${tc(i.t)}</span><span>${esc(i.what)}</span></li>`).join("");
+  const loud = d.tp != null && d.tp > -0.5;
+  return `<article class="card" data-id="${d.id}">
+    <div class="film"><img src="${d.thumb}" alt="8 frames de @${esc(d.creator)}" loading="lazy" height="120"></div>
+    <div class="body">
+      <div class="top">
+        <a class="creator" href="${esc(d.url)}" target="_blank" rel="noopener">@${esc(d.creator)}</a>
+        <span class="franchise">${esc(t.franchise)}</span>
+        ${t.characters && t.characters.length ? `<span class="chip">${esc(t.characters.join(", "))}</span>` : ""}
+      </div>
+      <p class="msg">${esc(t.message)}</p>
+      <div class="chips">
+        <span class="chip type">${TYPES[t.edit_type]||esc(t.edit_type)}</span>
+        <span class="chip">${esc(t.source_type)}</span>
+        ${(t.mood||[]).map(m=>`<span class="chip">${esc(m)}</span>`).join("")}
+        ${t.trend?`<span class="chip">trend: ${esc(t.trend)}</span>`:""}
+        ${t.ai_generated?`<span class="chip low">gerado por IA</span>`:""}
+        ${d.confidence==="baixa"?`<span class="chip low">confiança baixa</span>`:""}
+      </div>
+      <div class="metrics">
+        <span><b>${fmtViews(d.views)}</b> views</span><span>like <b>${d.like_rate ?? "–"}</b></span><span>share <b>${d.share_rate ?? "–"}</b></span>
+        <span>${esc(d.size)} · ${d.dur}s</span><span>${d.cuts_s} cortes/s</span><span>${d.bpm ?? "–"} bpm</span>
+        <span class="${loud?"hot":""}">${d.lufs ?? "–"} LUFS · pico ${d.tp ?? "–"} dB</span>
+      </div>
+      ${d.claude_note?`<p class="notice">${esc(d.claude_note)}</p>`:""}
+      <div class="cols">
+        <div><table><thead><tr><th>Critério</th><th>Claude</th><th>Você</th></tr></thead><tbody>${rows}</tbody></table></div>
+        <div style="display:grid;gap:12px;align-content:start">
+          ${iss?`<div><h3>Problemas, com o segundo exato</h3><ul class="issues">${iss}</ul></div>`:`<div><h3>Problemas</h3><p class="fix">Nenhum apontado.</p></div>`}
+          ${str?`<div><h3>Pontos fortes</h3><ul class="issues">${str}</ul></div>`:""}
+          ${(d.audience||d.top.length)?`<div><h3>Público</h3>${d.audience?`<div>${esc(d.audience)}</div>`:""}${d.top.map(c=>`<p class="quote">${esc(c)}</p>`).join("")}</div>`:""}
+        </div>
+      </div>
+      <div class="review">
+        <div><label for="n-${d.id}"><h3>Sua observação</h3></label>
+          <textarea id="n-${d.id}" placeholder="O que o Claude errou, o que faltou, o que você teria feito…">${esc(r.notes||"")}</textarea></div>
+        <div class="actions">
+          <button class="agree" data-status="agree" aria-pressed="${r.status==="agree"}">Concordo</button>
+          <button class="adjust" data-status="adjust" aria-pressed="${r.status==="adjust"}">Ajustei</button>
+          <span class="saved" id="sv-${d.id}" aria-live="polite"></span>
+        </div>
+      </div>
+    </div>
+  </article>`;
+}
+
+function render(){
+  const type = $("#f-type").value, st = $("#f-status").value, sort = $("#f-sort").value;
+  let xs = DATA.filter(d => (!type || d.tags.edit_type === type) &&
+    (!st || (st === "pending" ? !(reviews[d.id]||{}).status : (reviews[d.id]||{}).status === st)));
+  const key = {"overall-desc":d=>-d.scores.overall.v,"overall-asc":d=>d.scores.overall.v,"views-desc":d=>-d.views,"like-desc":d=>-(d.like_rate||0)}[sort];
+  xs.sort((a,b)=>key(a)-key(b));
+  $("#list").innerHTML = xs.length ? xs.map(card).join("") : `<p class="empty">Nenhum vídeo com esse filtro.</p>`;
+  if (!db) $("#list").querySelectorAll("input,textarea,button").forEach(e => e.disabled = true);
+  progress();
+}
+function progress(){
+  const n = DATA.filter(d => (reviews[d.id]||{}).status).length;
+  $("#done").textContent = n; $("#total").textContent = DATA.length;
+  $("#barfill").style.width = (100*n/DATA.length)+"%";
+}
+
+const timers = {};
+function collect(id){
+  const el = document.querySelector(`.card[data-id="${id}"]`); if (!el) return null;
+  const scores = {};
+  el.querySelectorAll("td.you input").forEach(i => { if (i.value !== "") scores[i.dataset.k] = Number(i.value); });
+  const pressed = el.querySelector('button[aria-pressed="true"]');
+  return {scores, notes: el.querySelector("textarea").value, status: pressed ? pressed.dataset.status : (reviews[id]||{}).status || null};
+}
+function save(id){
+  clearTimeout(timers[id]);
+  timers[id] = setTimeout(async () => {
+    const body = collect(id); if (!body || !db) return;
+    reviews[id] = body;
+    const sv = document.getElementById("sv-"+id);
+    if (sv) sv.textContent = "salvando…";
+    try { await db.doc("reviews/"+id).set({...body, updated: new Date().toISOString()}); if (sv) sv.textContent = "salvo"; }
+    catch (e) { if (sv) sv.textContent = e && e.code === "permission_denied" ? "sem permissão" : "erro ao salvar"; }
+    progress();
+  }, 700);
+}
+
+document.addEventListener("input", e => {
+  const c = e.target.closest(".card"); if (!c) return;
+  if (e.target.matches("td.you input")) {
+    const base = DATA.find(d=>d.id===c.dataset.id).scores[e.target.dataset.k].v;
+    e.target.classList.toggle("changed", e.target.value !== "" && Number(e.target.value) !== base);
+  }
+  save(c.dataset.id);
+});
+document.addEventListener("click", e => {
+  const b = e.target.closest("button[data-status]"); if (!b) return;
+  const c = b.closest(".card"), on = b.getAttribute("aria-pressed") !== "true";
+  c.querySelectorAll("button[data-status]").forEach(x => x.setAttribute("aria-pressed","false"));
+  b.setAttribute("aria-pressed", String(on));
+  if (!on) { reviews[c.dataset.id] = {...(reviews[c.dataset.id]||{}), status:null}; }
+  save(c.dataset.id);
+});
+["f-type","f-status","f-sort"].forEach(id => $("#"+id).addEventListener("change", render));
+
+const types = [...new Set(DATA.map(d=>d.tags.edit_type))];
+$("#f-type").insertAdjacentHTML("beforeend", types.map(t=>`<option value="${t}">${TYPES[t]||t}</option>`).join(""));
+render();
+
+(async () => {
+  db = window.claude ? await window.claude.use("db") : null;
+  if (!db) { $("#notice").textContent = "Abra esta página no claude.ai, logado, para salvar a revisão. Aqui ela fica só para leitura."; return; }
+  let first = true;
+  const t = setTimeout(() => { if (first) { first = false; render(); } }, 10000);
+  db.collection("reviews").onSnapshot(snap => {
+    snap.docs.forEach(s => { reviews[s.id] = s.data() || {}; });
+    if (first) { first = false; clearTimeout(t); render(); } else progress();
+  }, () => { clearTimeout(t); if (first) { first = false; render(); } });
+})();
+</script>

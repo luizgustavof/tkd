@@ -1,0 +1,17 @@
+# Pacotes do venv do tkd (tools/rea-video/.venv, Python 3.12). Tudo na CPU.
+#   py -3.12 -m venv tools/rea-video/.venv
+#   tools/rea-video/.venv/Scripts/pip install -r scripts/requirements.txt
+#   tools/rea-video/.venv/Scripts/scrapling install
+-r requirements-web.txt
+faster-whisper>=1.2
+streamlink>=8.0
+numpy>=2.0
+scipy>=1.13
+opencv-python-headless>=4.10
+librosa>=0.11
+soundfile>=0.13
+requests>=2.32
+certifi
+rapidocr-onnxruntime>=1.4
+shazamio>=0.7
+rembg>=2.0

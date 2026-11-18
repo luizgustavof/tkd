@@ -1,0 +1,36 @@
+[workspace]
+members = ["crates/tkd-core", "app/src-tauri"]
+resolver = "2"
+
+[workspace.dependencies]
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4", features = ["derive"] }
+rand = "0.8"
+rusqlite = { version = "0.32", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "process", "fs", "time", "io-util", "sync", "signal"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+walkdir = "2"
+toml_edit = "0.22"
+tokio-util = "0.7"
+thiserror = "2"
+
+[package]
+name = "tkd"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[dependencies]
+tkd-core = { path = "crates/tkd-core" }
+anyhow.workspace = true
+chrono.workspace = true
+clap.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

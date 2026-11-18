@@ -1,0 +1,54 @@
+# --- build ---
+/target/
+node_modules/
+app/dist/
+app/src-tauri/gen/
+__pycache__/
+*.pyc
+
+# --- your config and accounts (never commit) ---
+/tkd.toml
+.env
+*.local
+*.local.*
+# browser profile per channel: TikTok/Google cookies
+/.profiles/
+/.browser-profile/
+/.playwright-mcp/
+
+# --- local state and generated output ---
+state.db
+state.db-shm
+state.db-wal
+/out/
+/.lixeira/
+*.log
+*.json.bak
+*.json.corrupt-*
+*.invalid
+*.migrated
+
+# --- your channels (knowledge, clip banks, library); only the example is versioned ---
+/channels/*
+!/channels/_example/
+
+# --- third-party media and studies (downloaded, stays on disk) ---
+/analysis/
+/dataset*/
+channels/*/refs/
+channels/*/library/
+video/public/*/
+
+# --- external tools and optional private components ---
+/tools/
+/evaluator/
+# your own notes and private scripts (anything under private/, or named *.private.*)
+/private/
+*.private.*
+
+# --- editor / agent tooling ---
+/.claude/
+/.vscode/
+/.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,34 @@
+//! Nucleo do tkd: pipeline dos canais, usado pela CLI e pelo app desktop.
+
+pub mod accounts;
+pub mod agent;
+pub mod brand;
+pub mod cobalt;
+pub mod edit;
+pub mod local_eval;
+pub mod browser;
+pub mod chaos;
+pub mod clips;
+pub mod chaos_lab;
+pub mod config;
+pub mod events;
+pub mod footage;
+pub mod hashtags;
+pub mod idle;
+pub mod ideate;
+pub mod live;
+pub mod media;
+pub mod music;
+pub mod proc;
+pub mod publish;
+pub mod recreate;
+pub mod render;
+pub mod review;
+pub mod scout;
+pub mod setup;
+pub mod spec;
+pub mod state;
+pub mod study;
+pub mod usage;
+pub mod watch;
+pub mod yt_pace;

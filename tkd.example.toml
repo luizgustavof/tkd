@@ -1,0 +1,23 @@
+# Config global. Copie para tkd.toml.
+
+[agents]
+model = "claude-opus-5-5"    # padrao para toda tarefa sem override
+effort = "medium"
+parallel = 2                 # chamadas do Claude ao mesmo tempo
+
+# override por tarefa (ideate, recreate, review, study, footage, tag_clips, caption, review_clips)
+[tasks.review_clips]
+model = "claude-sonnet-5-5"
+effort = "medium"
+
+[tasks.caption]
+model = "claude-sonnet-5-5"
+effort = "low"
+
+[app]
+autopilot = false            # true: o app liga os vigias de live e o ciclo de post sozinho
+
+# Cobalt (opcional): baixa o video por uma instancia publica antes do yt-dlp. So instancias sem captcha.
+# Chave de API, se a instancia pedir, em cobalt.local.toml (fora do git).
+[cobalt]
+instances = []
