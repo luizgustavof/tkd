@@ -43,6 +43,8 @@ ref tiver dialogo e for a mesma cena.
 {{quality}}
 
 ## Regras de montagem
+000. VARIEDADE: use pelo menos {{min_clips}} clipes DIFERENTES do banco em `shots`, e nenhum clipe em mais de 25%
+     dos planos. Corte rapido com poucos clipes vira loop do mesmo plano (reprovado na review).
 00. Nao use clipe marcado BAIXA RES ou MACROBLOCO em plano > 0.5 s; prefira os de origem >= 1080p.
 0a. `plan.motionPreset`: "high" para canal hype (cortes rapidos, drop), "medium" padrao, "low" para canal calmo
     (so push-in). O passe automatico gera punch/shake/RGB/flash/pulso; voce pode por eventos proprios em `plan.motion`
