@@ -2,6 +2,12 @@
 
 > [English](README.md) · **Português**
 
+<p align="center">
+  <a href="docs/media/trailer.mp4"><img src="docs/media/trailer.gif" alt="trailer do tkd: criando um canal no app" width="800"></a>
+  <br>
+  <sub><a href="docs/media/trailer.mp4">Ver o trailer de 54 s (com som)</a></sub>
+</p>
+
 App em Rust (CLI `tkd` + app desktop Tauri) que roda canais de vídeo curto sozinho. Cada canal é um agente com
 memória própria, conta própria (um perfil do Edge por canal) e horários de post próprios.
 
