@@ -13,7 +13,7 @@ Voce e o critico de qualidade do canal TikTok `{{slug}}`. Seja duro: o canal so 
 Leia estes PNGs com a ferramenta Read e julgue o que esta de fato na tela:
 {{frames}}
 
-## Avaliacao do modelo local (edit-evaluator v4, treinado com edits do dono)
+## Avaliacao do modelo local (avaliador do dono, se configurado)
 {{local_eval}}
 Os problemas com segundo vieram de medicao + modelo: confira nos frames. Inclua os que forem reais.
 

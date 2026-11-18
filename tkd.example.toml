@@ -21,3 +21,9 @@ autopilot = false            # true: o app liga os vigias de live e o ciclo de p
 # Chave de API, se a instancia pedir, em cobalt.local.toml (fora do git).
 [cobalt]
 instances = []
+
+# Avaliador local opcional (seu proprio modelo) para a review dos edits. Sem esta secao: QA medido + Claude.
+# Protocolo e todas as opcoes em docs/EVALUATOR.md. Para testar a ponte sem modelo, use o exemplo:
+# [evaluator]
+# name = "example"
+# command = ["python", "scripts/example_evaluator.py", "{video}", "--caption", "{caption}"]

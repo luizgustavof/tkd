@@ -3,7 +3,7 @@
 //!
 //! personagem (rodizio) -> banco de clipes/falas (baixa se faltar) -> referencia -> recreate
 //! -> legenda/hashtags -> Spec registrada (mp4 em out/renders/<id>.mp4). Dai em diante segue
-//! o mesmo caminho dos videos de texto: review (modelo local v4 + Claude) e publish.
+//! o mesmo caminho dos videos de texto: review (modelo local opcional + Claude) e publish.
 
 use crate::{agent, config::Channel, footage, recreate, spec::Spec, state::Store};
 use anyhow::{Context, Result};
@@ -226,7 +226,7 @@ async fn caption(ch: &Channel, character: &str, lines: &[String]) -> Result<Capt
 }
 
 /// Spec minima de um edit pronto: o mp4 ja vem renderizado pelo recreate; a spec serve pra
-/// review/publish (legenda, hashtags) e marca o video como footage (avaliado pela v4).
+/// review/publish (legenda, hashtags) e marca o video como footage (avaliado pelo modelo local, se houver).
 fn edit_spec(ch: &Channel, id: &str, character: &str, dur: f64, cap: &CaptionOut, reference: &str) -> Result<Spec> {
     let preset: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(ch.preset()).unwrap_or_default()).unwrap_or_default();
@@ -455,7 +455,7 @@ mod tests {
         let ch = Channel { slug: "x".into(), ..Default::default() };
         let cap = CaptionOut { caption: "Toji não perdoa".into(), hashtags: vec!["#toji".into()] };
         let s = edit_spec(&ch, "x-1", "Toji Fushiguro", 18.0, &cap, "123").unwrap();
-        assert!(crate::local_eval::in_domain(&s));
+        assert!(crate::local_eval::in_domain(&s, &crate::local_eval::EvaluatorCfg::default()));
         assert_eq!(s.caption, "Toji não perdoa");
     }
 

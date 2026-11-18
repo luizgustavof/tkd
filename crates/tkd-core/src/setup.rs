@@ -264,10 +264,29 @@ fn channels() -> Item {
     it
 }
 
+fn evaluator() -> Item {
+    let mut it = item("evaluator", "Avaliador local (opcional)", "modelo proprio que da nota aos edits antes do Claude");
+    let cfg = crate::local_eval::config();
+    // opcional: nunca "faltando"; sem ele a review usa o QA medido e o Claude
+    it.status = Status::Ok;
+    if !cfg.enabled() {
+        it.detail = "nao configurado: review com QA + Claude (ver docs/EVALUATOR.md)".into();
+    } else {
+        match crate::local_eval::available(&cfg) {
+            Ok(_) => it.detail = format!("{} ligado", cfg.name),
+            Err(e) => {
+                it.status = Status::Warn;
+                it.detail = e;
+            }
+        }
+    }
+    it
+}
+
 /// Confere tudo (os comandos externos rodam em paralelo).
 pub async fn check() -> Vec<Item> {
     let (a, b, c, d, e) = tokio::join!(ffmpeg(), node(), claude(), ytdlp(), venv());
-    vec![a, c, d, e, b, browser_deps(), edge(), global_config(), channels()]
+    vec![a, c, d, e, b, browser_deps(), edge(), global_config(), evaluator(), channels()]
 }
 
 /// Conserto de um clique. So o que nao precisa de admin nem mexe fora do projeto/Python do usuario.
