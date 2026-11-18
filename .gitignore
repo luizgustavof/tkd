@@ -38,6 +38,8 @@ state.db-wal
 channels/*/refs/
 channels/*/library/
 video/public/*/
+# assets do trailer do README (prints e gravacoes do app com dados de demonstracao)
+!video/public/trailer/
 
 # --- external tools and optional private components ---
 /tools/

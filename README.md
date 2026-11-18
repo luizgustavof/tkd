@@ -2,6 +2,12 @@
 
 > **English** · [Português](README.pt-BR.md)
 
+<p align="center">
+  <a href="docs/media/trailer.mp4"><img src="docs/media/trailer.gif" alt="tkd trailer: creating a channel in the app" width="800"></a>
+  <br>
+  <sub><a href="docs/media/trailer.mp4">Watch the 54 s trailer (with sound)</a></sub>
+</p>
+
 A Rust app (the `tkd` CLI plus a Tauri desktop app) that runs short-video channels on its own. Every channel is an
 agent with its own memory, its own account (one Edge profile per channel) and its own posting schedule. Claude
 (`claude -p`) makes the creative calls; measured rules (ffmpeg, whisper, loudness, scene detection) check
