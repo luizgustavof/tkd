@@ -137,3 +137,9 @@ Dependências com licença própria, que valem à parte:
 - **Modelos e serviços** (Claude, whisper, ElevenLabs): cada um com os próprios termos.
 - **Plataformas**: a automação de post contraria os termos do TikTok (ver Avisos). Vídeo de terceiro (footage,
   live) segue os direitos de quem fez.
+
+## Isenção de responsabilidade
+
+O tkd é fornecido como está, sem garantia. Usar a ferramenta é por sua conta e risco: você é o único responsável
+pelas suas contas, pelo que é postado e por respeitar os termos de cada plataforma e os direitos de quem fez o
+conteúdo. Os autores não respondem por banimento, strike, perda de conta ou qualquer outra consequência do uso.

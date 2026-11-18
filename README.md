@@ -143,3 +143,9 @@ Dependencies with their own licenses apply separately:
 - **Models and services** (Claude, whisper, ElevenLabs): each under its own terms.
 - **Platforms**: post automation goes against TikTok's terms (see Warnings). Third-party video (footage, lives)
   belongs to whoever made it.
+
+## Disclaimer
+
+tkd is provided as is, with no warranty. Using it is entirely at your own risk: you alone are responsible for your
+accounts, for what gets posted and for following each platform's terms and the rights of the content's owners. The
+authors are not liable for bans, strikes, lost accounts or any other consequence of using it.
