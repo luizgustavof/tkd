@@ -23,7 +23,7 @@ export function Toaster() {
     () => items,
   );
   return (
-    <div aria-live="polite" className="fixed bottom-5 right-5 z-50 flex w-[min(380px,calc(100vw-40px))] flex-col gap-2">
+    <div aria-live="polite" className="fixed bottom-5 end-5 z-50 flex w-[min(380px,calc(100vw-40px))] flex-col gap-2">
       {list.map((t) => (
         <div
           key={t.id}

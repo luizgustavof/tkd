@@ -7,6 +7,7 @@ import { ago } from "../lib/format";
 import { Dialog, Page, PageHeader, Panel, Segmented } from "../components/ui";
 import { toast } from "../components/toast";
 import { Select } from "../components/Select";
+import { t, tx } from "../lib/i18n";
 
 type Filtro = "todos" | "livres" | "usados";
 
@@ -36,7 +37,7 @@ function Preview({ src, duration, onOpen }: { src: string; duration: number; onO
     <button
       ref={box}
       type="button"
-      aria-label="Assistir corte"
+      aria-label={t("Assistir corte")}
       onClick={onOpen}
       onMouseEnter={() => vid.current?.play().catch(() => {})}
       onMouseLeave={() => {
@@ -60,11 +61,11 @@ function Preview({ src, duration, onOpen }: { src: string; duration: number; onO
           className="size-full object-cover"
         />
       )}
-      {erro && <span className="absolute inset-0 grid place-items-center text-xs text-dim">Sem prévia</span>}
+      {erro && <span className="absolute inset-0 grid place-items-center text-xs text-dim">{t("Sem prévia")}</span>}
       <span className="pointer-events-none absolute inset-0 grid place-items-center bg-black/25 opacity-100 transition-opacity group-hover:opacity-0">
         <span className="grid size-11 place-items-center rounded-full bg-black/60 text-lg text-white">▶</span>
       </span>
-      <span className="mono pointer-events-none absolute right-2 bottom-2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] text-white">
+      <span className="mono pointer-events-none absolute end-2 bottom-2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] text-white">
         {duration.toFixed(0)} s
       </span>
     </button>
@@ -78,13 +79,13 @@ function Player({ c, src, onClose }: { c: ClipDto; src: string; onClose: () => v
     <div className="flex w-[min(92vw,1100px)] flex-col gap-3 p-4">
       <div className="flex items-baseline gap-2">
         <span className="font-medium">{c.streamer}</span>
-        <span className="text-xs text-dim">{PLAT[c.platform] ?? c.platform} · {c.category ?? "categoria ?"}</span>
-        <span className="ml-auto flex gap-2">
+        <span className="text-xs text-dim">{PLAT[c.platform] ?? c.platform} · {c.category ?? t("categoria ?")}</span>
+        <span className="ms-auto flex gap-2">
           <button type="button" className="btn btn-sec" onClick={() => vid.current?.requestFullscreen().catch(() => {})}>
-            Expandir
+            {t("Expandir")}
           </button>
           <button type="button" className="btn btn-sec" onClick={onClose}>
-            Fechar
+            {t("Fechar")}
           </button>
         </span>
       </div>
@@ -107,7 +108,7 @@ function ClipCard({ c }: { c: ClipDto }) {
   const apagar = useMutation({
     mutationFn: () => commands.deleteClip(c.key),
     onSuccess: () => {
-      toast(`Corte de ${c.streamer} apagado`);
+      toast(t("Corte de {s} apagado", { s: c.streamer }));
       return qc.invalidateQueries({ queryKey: ["clips"] });
     },
   });
@@ -116,27 +117,27 @@ function ClipCard({ c }: { c: ClipDto }) {
       {src ? (
         <Preview src={src} duration={c.duration ?? 0} onOpen={() => setTocando(true)} />
       ) : (
-        <div className="grid aspect-video place-items-center rounded-lg bg-black text-xs text-dim">Arquivo sumiu</div>
+        <div className="grid aspect-video place-items-center rounded-lg bg-black text-xs text-dim">{t("Arquivo sumiu")}</div>
       )}
-      <Dialog open={tocando} onClose={() => setTocando(false)} label={`Corte de ${c.streamer}`}>
+      <Dialog open={tocando} onClose={() => setTocando(false)} label={t("Corte de {s}", { s: c.streamer })}>
         <Player c={c} src={src} onClose={() => setTocando(false)} />
       </Dialog>
       <div className="flex items-baseline gap-2">
         <span className="truncate font-medium">{c.streamer}</span>
         <span className="text-xs text-dim">{PLAT[c.platform] ?? c.platform}</span>
-        <span className="mono ml-auto text-xs text-dim" title={c.created}>{c.created ? ago(c.created) : ""}</span>
+        <span className="mono ms-auto text-xs text-dim" title={c.created}>{c.created ? ago(c.created) : ""}</span>
       </div>
       <div className="flex flex-wrap gap-1.5 text-[11px]">
-        <span className="rounded-md bg-[#1f2125] px-2 py-0.5 text-fg-2">{c.category ?? "categoria ?"}</span>
+        <span className="rounded-md bg-[#1f2125] px-2 py-0.5 text-fg-2">{c.category ?? t("categoria ?")}</span>
         <span className="mono rounded-md bg-[#1f2125] px-2 py-0.5 text-fg-2">{(c.duration ?? 0).toFixed(0)} s</span>
-        <span className="mono rounded-md bg-[#1f2125] px-2 py-0.5 text-fg-2" title="nota do momento (chat + audio + movimento)">
-          nota {(c.score ?? 0).toFixed(2)}
+        <span className="mono rounded-md bg-[#1f2125] px-2 py-0.5 text-fg-2" title={t("nota do momento (chat + audio + movimento)")}>
+          {t("nota {n}", { n: (c.score ?? 0).toFixed(2) })}
         </span>
-        {c.vertical && <span className="rounded-md bg-accent-soft px-2 py-0.5 text-accent-ink">9:16 pronto</span>}
+        {c.vertical && <span className="rounded-md bg-accent-soft px-2 py-0.5 text-accent-ink">{t("9:16 pronto")}</span>}
         {c.used ? (
-          <span className="rounded-md bg-accent-soft px-2 py-0.5 text-accent-ink">{c.used}</span>
+          <span className="rounded-md bg-accent-soft px-2 py-0.5 text-accent-ink">{tx(c.used)}</span>
         ) : (
-          <span className="rounded-md bg-[#1f2125] px-2 py-0.5 text-dim">na fila</span>
+          <span className="rounded-md bg-[#1f2125] px-2 py-0.5 text-dim">{t("na fila")}</span>
         )}
       </div>
       {c.chat.some(temTexto) && (
@@ -149,16 +150,16 @@ function ClipCard({ c }: { c: ClipDto }) {
       {c.transcript && <p className="m-0 line-clamp-2 text-xs text-dim">“{c.transcript}”</p>}
       <div className="mt-auto flex gap-2 pt-1">
         <button type="button" className="btn btn-sec" disabled={!c.mp4} onClick={() => abrir.mutate()}>
-          Mostrar na pasta
+          {t("Mostrar na pasta")}
         </button>
         <button
           type="button"
-          className={`btn ml-auto ${confirmar ? "btn-pri bg-live" : "btn-sec"}`}
+          className={`btn ms-auto ${confirmar ? "btn-pri bg-live" : "btn-sec"}`}
           disabled={apagar.isPending}
-          title="Apaga o corte do disco (o post já publicado não é afetado)"
+          title={t("Apaga o corte do disco (o post já publicado não é afetado)")}
           onClick={() => (confirmar ? apagar.mutate() : setConfirmar(true))}
         >
-          {apagar.isPending ? "Apagando…" : confirmar ? "Confirmar?" : "Deletar"}
+          {apagar.isPending ? t("Apagando…") : confirmar ? t("Confirmar?") : t("Deletar")}
         </button>
       </div>
     </article>
@@ -176,36 +177,36 @@ export default function Clips() {
   );
   return (
     <Page>
-      <PageHeader title="Cortes" sub="Tudo que o clipper cortou das lives, mais novo primeiro. Atualiza sozinho a cada 10 s." />
+      <PageHeader title={t("Cortes")} sub={t("Tudo que o clipper cortou das lives, mais novo primeiro. Atualiza sozinho a cada 10 s.")} />
       <Panel
         id="vig"
-        title={`Vigiando agora: ${data?.watching.length ?? 0} de ${data?.max_watch ?? "?"}`}
-        sub={data?.watching.length ? data.watching.map(nomeLive).join(" · ") : "Nenhuma live sendo gravada (piloto desligado, canal pausado ou ninguém ao vivo no jogo)."}
+        title={t("Vigiando agora: {n} de {max}", { n: data?.watching.length ?? 0, max: data?.max_watch ?? "?" })}
+        sub={data?.watching.length ? data.watching.map(nomeLive).join(" · ") : t("Nenhuma live sendo gravada (piloto desligado, canal pausado ou ninguém ao vivo no jogo).")}
       />
       <div className="flex flex-wrap items-center gap-3">
         <Segmented<Filtro>
-          label="Filtro"
+          label={t("Filtro")}
           value={filtro}
           onChange={setFiltro}
           options={[
-            { value: "todos", label: `Todos (${clips.length})` },
-            { value: "livres", label: "Na fila" },
-            { value: "usados", label: "Já usados" },
+            { value: "todos", label: t("Todos ({n})", { n: clips.length }) },
+            { value: "livres", label: t("Na fila") },
+            { value: "usados", label: t("Já usados") },
           ]}
         />
         <Select
-          label="Streamer"
+          label={t("Streamer")}
           size="sm"
           className="w-[200px]"
           value={streamer}
           onChange={setStreamer}
-          options={[{ value: "", label: "Todos os streamers" }, ...streamers.map((s) => ({ value: s, label: s }))]}
+          options={[{ value: "", label: t("Todos os streamers") }, ...streamers.map((s) => ({ value: s, label: s }))]}
         />
       </div>
       {isLoading ? (
-        <p className="text-dim">Carregando…</p>
+        <p className="text-dim">{t("Carregando…")}</p>
       ) : shown.length === 0 ? (
-        <p className="text-dim">Nenhum corte ainda.</p>
+        <p className="text-dim">{t("Nenhum corte ainda.")}</p>
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
           {shown.map((c) => (

@@ -5,6 +5,9 @@ import { activeStep, useLive, type AgentNode, type ChildNode, type LogLine, type
 import { ago, duration, hms } from "../lib/format";
 import { Avatar, Page } from "../components/ui";
 import { ICheck, IGlobe, IX } from "../components/icons";
+import { t, tx } from "../lib/i18n";
+import { isRtl } from "../lib/i18n";
+import type { MsgKey } from "../lib/messages";
 
 const TOOL_LABEL: Record<string, string> = {
   claude: "Claude",
@@ -12,8 +15,8 @@ const TOOL_LABEL: Record<string, string> = {
   remotion: "Remotion",
   ffmpeg: "ffmpeg",
   python: "Python",
-  local: "Modelo local",
 };
+const toolLabel = (tool: string) => (tool === "local" ? t("Modelo local") : TOOL_LABEL[tool] ?? tool);
 
 function StatusIcon({ s }: { s: NodeStatus }) {
   return (
@@ -35,7 +38,7 @@ function Tool({ tool, on }: { tool: string; on: boolean }) {
   if (!tool) return null;
   return (
     <span className={`inline-flex h-[22px] items-center rounded-md px-2 text-[11px] font-medium whitespace-nowrap ${on ? "bg-accent-soft text-accent-ink" : "bg-[#1f2125] text-fg-2"}`}>
-      {TOOL_LABEL[tool] ?? tool}
+      {toolLabel(tool)}
     </span>
   );
 }
@@ -44,7 +47,7 @@ type Sel = { channel: string; step?: string; child?: string };
 type Flat = { id: string; level: 1 | 2 | 3; channel: string; parent?: string; sel: Sel; expandable: boolean };
 
 const nodeCls = (selected: boolean) =>
-  `grid w-full items-center gap-2.5 rounded-lg border-0 bg-transparent px-2.5 py-[7px] text-left transition-colors duration-150 ${
+  `grid w-full items-center gap-2.5 rounded-lg border-0 bg-transparent px-2.5 py-[7px] text-start transition-colors duration-150 ${
     selected ? "bg-accent-bg shadow-[inset_0_0_0_1px_#3d3f7a]" : "hover:bg-raise"
   }`;
 
@@ -61,7 +64,7 @@ const AgentItem = memo(function AgentItem({ agent, color, hasPhoto, open, select
 }) {
   const st = activeStep(agent);
   const id = `a:${agent.channel}`;
-  const summary = st ? st.children.findLast((c) => c.status === "run")?.action || st.action || st.label : `parado · ${ago(agent.updatedAt)}`;
+  const summary = st ? tx(st.children.findLast((c) => c.status === "run")?.action || st.action || st.label) : t("parado · {ago}", { ago: ago(agent.updatedAt) });
   return (
     <div role="none" className="border-t border-line-soft py-1.5 first:border-t-0">
       <button
@@ -83,14 +86,14 @@ const AgentItem = memo(function AgentItem({ agent, color, hasPhoto, open, select
           <span className="truncate font-medium">{agent.channel}</span>
           <span className="truncate text-xs text-dim">{summary}</span>
         </span>
-        <span className={`text-xs font-medium ${st ? "text-accent" : "text-dim"}`}>{st ? "trabalhando" : "parado"}</span>
+        <span className={`text-xs font-medium ${st ? "text-accent" : "text-dim"}`}>{st ? t("trabalhando") : t("parado")}</span>
       </button>
       {open && (
-        <div role="group" className="ml-[19px] border-l border-[#2a2c32] pl-3">
+        <div role="group" className="ms-[19px] border-s border-[#2a2c32] ps-3">
           {agent.steps.map((s) => (
             <StepItem key={s.id} step={s} channel={agent.channel} selected={selected} focusId={focusId} onSelect={onSelect} />
           ))}
-          {!agent.steps.length && <span className="block px-2.5 py-2 text-xs text-dim">Nada ainda.</span>}
+          {!agent.steps.length && <span className="block px-2.5 py-2 text-xs text-dim">{t("Nada ainda.")}</span>}
         </div>
       )}
     </div>
@@ -119,8 +122,8 @@ function StepItem({ step, channel, selected, focusId, onSelect }: {
       >
         <StatusIcon s={step.status} />
         <span className="flex min-w-0 flex-col">
-          <span className={`truncate text-sm ${step.status === "run" ? "font-medium text-fg" : step.status === "done" ? "text-muted" : "text-fg-2"}`}>{step.label}</span>
-          <span className="truncate text-xs text-dim">{step.status === "error" ? step.detail : step.action || step.detail}</span>
+          <span className={`truncate text-sm ${step.status === "run" ? "font-medium text-fg" : step.status === "done" ? "text-muted" : "text-fg-2"}`}>{tx(step.label)}</span>
+          <span className="truncate text-xs text-dim">{step.status === "error" ? step.detail : tx(step.action || step.detail)}</span>
           {step.status === "run" && step.progress != null && (
             <span className="mt-1 block h-[3px] overflow-hidden rounded-sm bg-line">
               <span className="block h-full bg-accent transition-[width] duration-300" style={{ width: `${step.progress}%` }} />
@@ -130,7 +133,7 @@ function StepItem({ step, channel, selected, focusId, onSelect }: {
         <span className="mono text-[11px] whitespace-nowrap text-[#6f727d]">{hms(step.startedAt).slice(0, 5)}</span>
       </button>
       {step.children.length > 0 && (
-        <div role="group" className="ml-[19px] border-l border-[#24252a] pl-3">
+        <div role="group" className="ms-[19px] border-s border-[#24252a] ps-3">
           {step.children.slice(-6).map((c) => (
             <ChildItem key={c.id} c={c} channel={channel} step={step.id} selected={selected} focusId={focusId} onSelect={onSelect} />
           ))}
@@ -162,7 +165,7 @@ function ChildItem({ c, channel, step, selected, focusId, onSelect }: {
     >
       <StatusIcon s={c.status} />
       <span className="flex min-w-0 flex-col">
-        <span className={`truncate text-[13px] ${c.status === "run" ? "text-fg" : "text-muted"}`}>{c.action || c.label}</span>
+        <span className={`truncate text-[13px] ${c.status === "run" ? "text-fg" : "text-muted"}`}>{tx(c.action || c.label)}</span>
         {c.status === "run" && c.progress != null && (
           <span className="mt-1 block h-[3px] overflow-hidden rounded-sm bg-line">
             <span className="block h-full bg-accent transition-[width] duration-300" style={{ width: `${c.progress}%` }} />
@@ -198,9 +201,9 @@ function LogList({ log }: { log: LogLine[] }) {
   useEffect(() => {
     if (log.length) v.scrollToIndex(log.length - 1, { align: "end" });
   }, [log.length, v]);
-  if (!log.length) return <span className="text-[13px] text-dim">Sem registro ainda.</span>;
+  if (!log.length) return <span className="text-[13px] text-dim">{t("Sem registro ainda.")}</span>;
   return (
-    <div ref={ref} className="max-h-[300px] overflow-y-auto" role="log" aria-label="Registro">
+    <div ref={ref} className="max-h-[300px] overflow-y-auto" role="log" aria-label={t("Registro")}>
       <div className="relative w-full" style={{ height: v.getTotalSize() }}>
         {v.getVirtualItems().map((it) => {
           const l = log[it.index]!;
@@ -209,11 +212,11 @@ function LogList({ log }: { log: LogLine[] }) {
               key={it.key}
               ref={v.measureElement}
               data-index={it.index}
-              className="absolute top-0 left-0 grid w-full grid-cols-[62px_minmax(0,1fr)] gap-2.5 py-[5px] text-[12.5px]"
+              className="absolute top-0 start-0 grid w-full grid-cols-[62px_minmax(0,1fr)] gap-2.5 py-[5px] text-[12.5px]"
               style={{ transform: `translateY(${it.start}px)` }}
             >
               <span className="mono pt-0.5 text-[11px] text-[#6f727d]">{hms(l.at)}</span>
-              <span className={`break-words ${l.tone === "error" ? "text-live" : l.tone === "ok" ? "text-ok" : "text-fg-2"}`}>{l.text}</span>
+              <span className={`break-words ${l.tone === "error" ? "text-live" : l.tone === "ok" ? "text-ok" : "text-fg-2"}`} dir="auto">{l.text}</span>
             </div>
           );
         })}
@@ -238,14 +241,14 @@ function Inspector({ sel, color, hasPhoto }: { sel: Sel; color: string; hasPhoto
   const child = sel.child ? step?.children.find((c) => c.id === sel.child) : step?.children.findLast((c) => c.status === "run");
   const node = child ?? step;
   const status = node?.status ?? "wait";
-  const title = node ? (child ? child.action || child.label : step!.label) : "Parado";
+  const title = node ? tx(child ? child.action || child.label : step!.label) : t("Parado");
   const tool = node?.tool ?? "";
   const model = [...(step?.children ?? [])].reverse().find((c) => c.kind === "agent")?.action.match(/\(([^)]+)\)/)?.[1];
   const url = [...(step?.log ?? [])].reverse().find((l) => l.text.startsWith("url "))?.text.slice(4);
   const progress = node?.progress ?? null;
   const elapsed = node ? (node.endedAt ? new Date(node.endedAt).getTime() : now) - new Date(node.startedAt).getTime() : 0;
   const nextIdx = step ? ["scout", "study", "ideate", "render", "review", "publish"].indexOf(step.key) : -1;
-  const NEXT = ["Estudar", "Criar a ideia", "Montar o vídeo", "Avaliar", "Postar", "Esperar o próximo horário"];
+  const NEXT: MsgKey[] = ["Estudar", "Criar a ideia", "Montar o vídeo", "Avaliar", "Postar", "Esperar o próximo horário"];
 
   return (
     <section className="panel flex min-w-0 flex-col gap-4 p-5" aria-labelledby="t-insp">
@@ -256,23 +259,23 @@ function Inspector({ sel, color, hasPhoto }: { sel: Sel; color: string; hasPhoto
             {title}
           </h2>
           <span className="text-[13px] text-muted">
-            {agent.channel} · {step?.label ?? "sem etapa"}
+            {agent.channel} · {step ? tx(step.label) : t("sem etapa")}
           </span>
         </div>
         <span className={`text-xs font-medium ${status === "run" ? "text-accent" : status === "done" ? "text-ok" : status === "error" ? "text-live" : "text-dim"}`}>
-          {status === "run" ? "rodando" : status === "done" ? "pronto" : status === "error" ? "erro" : "parado"}
+          {status === "run" ? t("rodando") : status === "done" ? t("pronto") : status === "error" ? t("erro") : t("parado")}
         </span>
       </div>
 
       <div className="flex flex-col gap-2">
-        <span className="text-xs font-medium text-dim">O que está vendo</span>
+        <span className="text-xs font-medium text-dim">{t("O que está vendo")}</span>
         <div
           className="relative mx-auto flex aspect-[9/16] max-h-[360px] w-full max-w-[203px] flex-col justify-end overflow-hidden rounded-xl bg-[#08090a] shadow-[0_0_0_1px_var(--color-line)]"
           role="img"
-          aria-label={node?.action || title}
+          aria-label={tx(node?.action || "") || title}
         >
           <span className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(0deg,rgba(255,255,255,.025)_0_1px,transparent_1px_3px)]" />
-          <div className="absolute top-2.5 right-2.5 left-2.5 flex items-center justify-between">
+          <div className="absolute top-2.5 end-2.5 start-2.5 flex items-center justify-between">
             <Tool tool={tool} on={status === "run"} />
             {status === "run" && (
               <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-live">
@@ -283,7 +286,7 @@ function Inspector({ sel, color, hasPhoto }: { sel: Sel; color: string; hasPhoto
           </div>
           <div className="relative flex flex-1 items-center justify-center px-4 text-center text-[13px] text-fg-2">
             {tool === "edge" ? <IGlobe size={28} className="text-faint" /> : null}
-            <span className="absolute inset-x-4 bottom-16">{node?.action || step?.action || "Aguardando"}</span>
+            <span className="absolute inset-x-4 bottom-16">{tx(node?.action || step?.action || "") || t("Aguardando")}</span>
           </div>
           <div className="relative flex flex-col gap-1.5 p-3">
             {url && <span className="mono truncate text-[10.5px] text-dim">{url.replace(/^https?:\/\//, "")}</span>}
@@ -296,21 +299,21 @@ function Inspector({ sel, color, hasPhoto }: { sel: Sel; color: string; hasPhoto
       </div>
 
       <div>
-        {[
-          ["Ferramenta", TOOL_LABEL[tool] ?? (tool || "—")],
+        {([
+          ["Ferramenta", tool ? toolLabel(tool) : "—"],
           ["Modelo", model ?? "—"],
           ["Começou", node ? `${hms(node.startedAt)} · ${duration(elapsed)}` : "—"],
-          ["Depois disso", nextIdx >= 0 ? NEXT[nextIdx] : "—"],
-        ].map(([k, v]) => (
+          ["Depois disso", nextIdx >= 0 ? t(NEXT[nextIdx]!) : "—"],
+        ] as [MsgKey, string][]).map(([k, v]) => (
           <div key={k} className="grid grid-cols-[110px_minmax(0,1fr)] gap-2.5 border-t border-[#1f2125] py-2 text-[13px]">
-            <span className="text-dim">{k}</span>
+            <span className="text-dim">{t(k)}</span>
             <span className={k === "Começou" ? "mono" : ""}>{v}</span>
           </div>
         ))}
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-dim">Pensando em voz alta</span>
+        <span className="text-xs font-medium text-dim">{t("Pensando em voz alta")}</span>
         <LogList log={step?.log ?? []} />
       </div>
     </section>
@@ -325,12 +328,12 @@ function BrowserLock() {
       <IGlobe className="text-muted" />
       {h ? (
         <span>
-          Navegador: <b className="font-semibold">{h.channel}</b> usando
+          {t("Navegador:")} <b className="font-semibold">{h.channel}</b> {t("usando")}
         </span>
       ) : (
-        <span className="text-muted">Navegador livre</span>
+        <span className="text-muted">{t("Navegador livre")}</span>
       )}
-      {!!data?.waiting.length && <span className="text-muted">· {data.waiting.join(", ")} {data.waiting.length > 1 ? "esperam" : "espera"}</span>}
+      {!!data?.waiting.length && <span className="text-muted">· {data.waiting.join(", ")} {data.waiting.length > 1 ? t("esperam") : t("espera")}</span>}
     </div>
   );
 }
@@ -375,12 +378,14 @@ export default function Live() {
     const i = flat.findIndex((f) => f.id === focus);
     const cur = flat[i];
     if (!cur) return;
+    // em RTL a arvore abre para a esquerda: as setas laterais trocam de papel
+    const key = isRtl() ? ({ ArrowRight: "ArrowLeft", ArrowLeft: "ArrowRight" } as Record<string, string>)[e.key] ?? e.key : e.key;
     if (e.key === "ArrowDown" && flat[i + 1]) move(flat[i + 1]!.id);
     else if (e.key === "ArrowUp" && flat[i - 1]) move(flat[i - 1]!.id);
     else if (e.key === "Home" && flat[0]) move(flat[0].id);
     else if (e.key === "End" && flat.at(-1)) move(flat.at(-1)!.id);
-    else if (e.key === "ArrowRight" && cur.level === 1 && !shown.has(cur.channel)) toggle(cur.channel);
-    else if (e.key === "ArrowLeft") {
+    else if (key === "ArrowRight" && cur.level === 1 && !shown.has(cur.channel)) toggle(cur.channel);
+    else if (key === "ArrowLeft") {
       if (cur.level === 1 && shown.has(cur.channel)) toggle(cur.channel);
       else if (cur.parent) move(cur.parent);
     } else if (e.key === "Enter" || e.key === " ") select(cur.sel, cur.id);
@@ -393,13 +398,13 @@ export default function Live() {
       <header className="flex flex-wrap items-end gap-4">
         <div className="flex flex-[1_1_360px] flex-col gap-1">
           <div className="flex items-center gap-3">
-            <h1 className="m-0 text-2xl font-semibold tracking-[-0.02em]">Ao vivo</h1>
+            <h1 className="m-0 text-2xl font-semibold tracking-[-0.02em]">{t("Ao vivo")}</h1>
             <span className="inline-flex items-center gap-[7px] text-xs font-semibold tracking-[.02em] text-live">
               <span className={`size-2 rounded-full bg-live ${connected ? "anim-blink" : "opacity-40"}`} />
-              {connected ? "AGORA" : "CONECTANDO"}
+              {connected ? t("AGORA") : t("CONECTANDO")}
             </span>
           </div>
-          <p className="m-0 text-muted">O que cada agente está fazendo, vendo e usando neste momento. Clique num passo pra ver de perto.</p>
+          <p className="m-0 text-muted">{t("O que cada agente está fazendo, vendo e usando neste momento. Clique num passo pra ver de perto.")}</p>
         </div>
         <BrowserLock />
       </header>
@@ -407,7 +412,7 @@ export default function Live() {
       <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(300px,1fr)] items-start gap-6 max-[1000px]:grid-cols-1">
         <section className="panel p-2" aria-labelledby="t-tree">
           <h2 id="t-tree" className="sr-only">
-            Árvore dos agentes
+            {t("Árvore dos agentes")}
           </h2>
           {order.length ? (
             <div ref={treeRef} role="tree" aria-labelledby="t-tree" onKeyDown={onKey}>
@@ -432,7 +437,7 @@ export default function Live() {
             </div>
           ) : (
             <p className="m-0 px-3 py-10 text-center text-muted">
-              Nenhum agente trabalhou ainda nesta semana. Faça um vídeo de teste num canal pra ver aqui.
+              {t("Nenhum agente trabalhou ainda nesta semana. Faça um vídeo de teste num canal pra ver aqui.")}
             </p>
           )}
         </section>

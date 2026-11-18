@@ -7,7 +7,9 @@ import type { HandleRefs } from "../bindings";
 import { Select } from "../components/Select";
 import { keys, useChannel } from "../lib/queries";
 import { activeStep, forgetLive, useLive } from "../lib/live";
-import { EFFORT_LABEL, hm, modelLabel, shortDate } from "../lib/format";
+import { effortLabel, hm, modelLabel, shortDate } from "../lib/format";
+import { t, tx } from "../lib/i18n";
+import type { MsgKey } from "../lib/messages";
 import { Avatar, Dialog, Kv, Panel, Strip } from "../components/ui";
 import { IBack, INote, IOnce, IPause, IPlay, IShield, ISpin, IX } from "../components/icons";
 import { PlatformLogin } from "../components/PlatformLogin";
@@ -66,7 +68,7 @@ function Header({ d }: { d: ChannelDetail }) {
     startPause(async () => {
       try {
         await commands.pauseChannel(s.slug, !s.paused);
-        toast(s.paused ? `${s.slug} voltou a postar` : `${s.slug} pausado`);
+        toast(s.paused ? t("{s} voltou a postar", { s: s.slug }) : t("{s} pausado", { s: s.slug }));
       } catch (e) {
         toast(errMsg(e), "error");
       }
@@ -76,7 +78,7 @@ function Header({ d }: { d: ChannelDetail }) {
     startTest(async () => {
       try {
         await commands.runTestVideo(s.slug);
-        toast("Vídeo de teste começou. Acompanhe em Ao vivo.");
+        toast(t("Vídeo de teste começou. Acompanhe em Ao vivo."));
       } catch (e) {
         toast(errMsg(e), "error");
       }
@@ -89,7 +91,7 @@ function Header({ d }: { d: ChannelDetail }) {
     startPost(async () => {
       try {
         await commands.runTestPost(s.slug);
-        toast("Post de teste começou: sai como Somente você no TikTok e não listado no YouTube. Acompanhe em Ao vivo.");
+        toast(t("Post de teste começou: sai como Somente você no TikTok e não listado no YouTube. Acompanhe em Ao vivo."));
       } catch (e) {
         toast(errMsg(e), "error");
       }
@@ -101,7 +103,7 @@ function Header({ d }: { d: ChannelDetail }) {
     <header className="flex flex-col gap-[18px]">
       <Link to="/" className="inline-flex items-center gap-1.5 self-start text-[13px] !text-muted hover:!text-fg">
         <IBack size={14} />
-        Canais
+        {t("Canais")}
       </Link>
       <div className="flex flex-wrap items-start gap-x-6 gap-y-4">
         <div className="flex flex-[1_1_460px] items-start gap-[18px]">
@@ -109,20 +111,20 @@ function Header({ d }: { d: ChannelDetail }) {
           <div className="flex min-w-0 flex-col gap-1.5">
             <div className="flex flex-wrap items-baseline gap-2.5">
               <h1 className="m-0 text-[28px] font-semibold tracking-[-0.025em]">{s.slug}</h1>
-              {s.tiktok && <span className="mono text-[13px] text-muted">@{s.tiktok}</span>}
-              {s.paused && <span className="rounded-[5px] bg-[#1f2125] px-[7px] py-px text-[11px] font-medium text-warn">pausado</span>}
+              {s.tiktok && <span className="mono text-[13px] text-muted"><bdi>@{s.tiktok}</bdi></span>}
+              {s.paused && <span className="rounded-[5px] bg-[#1f2125] px-[7px] py-px text-[11px] font-medium text-warn">{t("pausado")}</span>}
             </div>
-            <p className="m-0 max-w-[64ch] text-[15px] text-fg-2">{d.persona || s.niche || "Ainda sem persona. Ela aparece depois do primeiro estudo."}</p>
+            <p className="m-0 max-w-[64ch] text-[15px] text-fg-2">{d.persona || s.niche || t("Ainda sem persona. Ela aparece depois do primeiro estudo.")}</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <button className="btn btn-ghost" type="button" onClick={() => setEditing(true)}>
-            Editar
+            {t("Editar")}
           </button>
           {!s.is_test && (
             <button className="btn btn-sec" type="button" onClick={pause} disabled={pausing}>
               {s.paused ? <IPlay /> : <IPause />}
-              {s.paused ? "Retomar canal" : "Pausar canal"}
+              {s.paused ? t("Retomar canal") : t("Pausar canal")}
             </button>
           )}
           <button
@@ -130,30 +132,30 @@ function Header({ d }: { d: ChannelDetail }) {
             type="button"
             onClick={testPost}
             disabled={posting || s.busy || !!running}
-            title="Faz um vídeo e posta de verdade, mas só você vê: Somente você no TikTok, não listado no YouTube. Não conta nos posts do dia."
+            title={t("Faz um vídeo e posta de verdade, mas só você vê: Somente você no TikTok, não listado no YouTube. Não conta nos posts do dia.")}
           >
             {posting && <ISpin size={14} />}
-            {armed ? "Confirmar post de teste" : "Post de teste"}
+            {armed ? t("Confirmar post de teste") : t("Post de teste")}
           </button>
           <button
             className="btn btn-pri"
             type="button"
             onClick={test}
             disabled={testing || s.busy || !!running}
-            title="Faz um vídeo completo e deixa pra você ver. Não posta."
+            title={t("Faz um vídeo completo e deixa pra você ver. Não posta.")}
           >
             {(testing || s.busy) && <ISpin size={14} />}
-            {s.busy ? "Fazendo vídeo…" : "Fazer vídeo de teste"}
+            {s.busy ? t("Fazendo vídeo…") : t("Fazer vídeo de teste")}
           </button>
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2.5">
         <Strip stages={stages} labels />
         <span className="text-[13px] text-muted">
-          {running ? (running.children.findLast((c) => c.status === "run")?.action || running.action || running.label) : "O teste faz o vídeo inteiro e para antes de postar."}
+          {running ? tx(running.children.findLast((c) => c.status === "run")?.action || running.action || running.label) : t("O teste faz o vídeo inteiro e para antes de postar.")}
         </span>
       </div>
-      <Dialog open={editing} onClose={() => setEditing(false)} label={`Editar ${s.slug}`}>
+      <Dialog open={editing} onClose={() => setEditing(false)} label={t("Editar {s}", { s: s.slug })}>
         <EditChannel d={d} onClose={() => setEditing(false)} />
       </Dialog>
     </header>
@@ -188,13 +190,13 @@ function EditChannel({ d, onClose }: { d: ChannelDetail; onClose: () => void }) 
         const list = tags.split(/[\s,]+/).map((t) => t.trim()).filter(Boolean);
         const charList = chars.split(/\n|,/).map((c) => c.trim()).filter(Boolean);
         if (format === "edit" && !charList.length) {
-          setError("Canal de edit precisa de pelo menos um personagem");
+          setError(t("Canal de edit precisa de pelo menos um personagem"));
           return;
         }
         const gameList = games.split("\n").map((g) => g.trim()).filter(Boolean);
         const liveList = streamers.split(/\s+/).map((u) => u.trim()).filter(Boolean);
         if (format === "clips" && (!liveList.length || liveList.some((u) => !/^https?:\/\//.test(u)))) {
-          setError("Cole o link completo de cada live (twitch.tv/…, kick.com/…, youtube.com/@…)");
+          setError(t("Cole o link completo de cada live (twitch.tv/…, kick.com/…, youtube.com/@…)"));
           return;
         }
         const changed =
@@ -229,7 +231,7 @@ function EditChannel({ d, onClose }: { d: ChannelDetail; onClose: () => void }) 
         await qc.invalidateQueries({ queryKey: keys.channel(target) });
         onClose();
         if (target !== s.slug) await navigate({ to: "/canal/$slug", params: { slug: target } });
-        toast(target !== s.slug ? `Agora o canal se chama ${target}` : "Canal atualizado");
+        toast(target !== s.slug ? t("Agora o canal se chama {s}", { s: target }) : t("Canal atualizado"));
       } catch (e) {
         setError(errMsg(e));
       }
@@ -245,95 +247,95 @@ function EditChannel({ d, onClose }: { d: ChannelDetail; onClose: () => void }) 
       }}
     >
       <div className="flex flex-col gap-4 px-[22px] pt-5 pb-4">
-        <h2 className="m-0 text-[17px] font-semibold">Editar canal</h2>
+        <h2 className="m-0 text-[17px] font-semibold">{t("Editar canal")}</h2>
         <label className={field}>
-          Nome
+          {t("Nome")}
           <input type="text" value={slug} onChange={(e) => setSlug(e.target.value)} autoComplete="off" className="mono w-full" />
           <span className="text-xs text-faint">
-            {slugOk ? "Letras minúsculas, números, - e _. Começar com _ deixa o canal como teste (nunca posta sozinho)." : "Use só letras minúsculas, números, - e _."}
+            {slugOk ? t("Letras minúsculas, números, - e _. Começar com _ deixa o canal como teste (nunca posta sozinho).") : t("Use só letras minúsculas, números, - e _.")}
           </span>
         </label>
         <label className={field}>
-          Assinatura
+          {t("Assinatura")}
           <input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="MARCA" className="w-full" />
-          <span className="text-xs text-faint">Como o canal assina no fim do vídeo e na marca d'água. Nome ou @ dos perfis estudados nunca entra.</span>
+          <span className="text-xs text-faint">{t("Como o canal assina no fim do vídeo e na marca d'água. Nome ou @ dos perfis estudados nunca entra.")}</span>
         </label>
         <label className={field}>
-          Tipo de vídeo
+          {t("Tipo de vídeo")}
           <Select
-            label="Tipo de vídeo"
+            label={t("Tipo de vídeo")}
             value={format}
             onChange={setFormat}
             options={[
-              { value: "texto", label: "Vídeo de texto", hint: "Frases, fatos e cartelas montados pelo agente" },
-              { value: "edit", label: "Edit de personagem", hint: "Cenas e falas reais de um personagem por vídeo" },
-              { value: "clips", label: "Cortes de live", hint: "Momentos de lives da Twitch, Kick e YouTube, com crédito" },
+              { value: "texto", label: t("Vídeo de texto"), hint: t("Frases, fatos e cartelas montados pelo agente") },
+              { value: "edit", label: t("Edit de personagem"), hint: t("Cenas e falas reais de um personagem por vídeo") },
+              { value: "clips", label: t("Cortes de live"), hint: t("Momentos de lives da Twitch, Kick e YouTube, com crédito") },
             ]}
           />
         </label>
         {format === "clips" && (
           <label className={field}>
-            Lives
+            {t("Lives")}
             <textarea value={streamers} onChange={(e) => setStreamers(e.target.value)} rows={4} className="mono w-full resize-y" placeholder={"https://twitch.tv/streamer\nhttps://kick.com/streamer"} />
             <span className="text-xs text-faint">
-              Um link por linha. Com o piloto ligado, o clipper assiste quem estiver ao vivo (até 2 lives ao mesmo tempo) e o canal posta os melhores cortes com crédito. Use só streamers que liberam corte.
+              {t("Um link por linha. Com o piloto ligado, o clipper assiste quem estiver ao vivo (até 2 lives ao mesmo tempo) e o canal posta os melhores cortes com crédito. Use só streamers que liberam corte.")}
             </span>
           </label>
         )}
         {format === "clips" && (
           <label className={field}>
-            Jogos
+            {t("Jogos")}
             <textarea value={games} onChange={(e) => setGames(e.target.value)} rows={2} className="mono w-full resize-y" placeholder="Grand Theft Auto VI" />
             <span className="text-xs text-faint">
-              Um por linha, com o nome da categoria na Twitch/Kick. O clipper só assiste quem estiver nesses jogos e pausa quando o streamer troca de jogo ou passa reprise. Vazio = qualquer jogo.
+              {t("Um por linha, com o nome da categoria na Twitch/Kick. O clipper só assiste quem estiver nesses jogos e pausa quando o streamer troca de jogo ou passa reprise. Vazio = qualquer jogo.")}
             </span>
           </label>
         )}
         {format === "edit" && (
           <>
             <label className={field}>
-              Personagens
+              {t("Personagens")}
               <textarea value={chars} onChange={(e) => setChars(e.target.value)} rows={4} className="w-full resize-y" placeholder={"Toji Fushiguro\nLight Yagami"} />
-              <span className="text-xs text-faint">Um por linha. Cada vídeo usa um só, em rodízio. O nome completo ajuda a achar as cenas certas.</span>
+              <span className="text-xs text-faint">{t("Um por linha. Cada vídeo usa um só, em rodízio. O nome completo ajuda a achar as cenas certas.")}</span>
             </label>
             <label className={field}>
-              Idioma das falas
+              {t("Idioma das falas")}
               <Select
-                label="Idioma das falas"
+                label={t("Idioma das falas")}
                 value={lang}
                 onChange={setLang}
                 options={[
-                  { value: "auto", label: "Automático" },
-                  { value: "ja", label: "Japonês", hint: "Áudio original" },
-                  { value: "en", label: "Inglês", hint: "Dublado" },
-                  { value: "pt", label: "Português", hint: "Dublado" },
+                  { value: "auto", label: t("Automático") },
+                  { value: "ja", label: t("Japonês"), hint: t("Áudio original") },
+                  { value: "en", label: t("Inglês"), hint: t("Dublado") },
+                  { value: "pt", label: t("Português"), hint: t("Dublado") },
                 ]}
               />
             </label>
           </>
         )}
         <label className={field}>
-          Nicho
-          <input type="text" value={niche} onChange={(e) => setNiche(e.target.value)} placeholder="ex.: edits de anime, Jujutsu Kaisen" className="w-full" />
+          {t("Nicho")}
+          <input type="text" value={niche} onChange={(e) => setNiche(e.target.value)} placeholder={t("ex.: edits de anime, Jujutsu Kaisen")} className="w-full" />
         </label>
         <label className={field}>
-          Persona (o texto embaixo do nome)
-          <textarea value={persona} onChange={(e) => setPersona(e.target.value)} rows={3} className="w-full resize-y" placeholder="Como o canal fala e o que ele posta. O estudo preenche sozinho." />
+          {t("Persona (o texto embaixo do nome)")}
+          <textarea value={persona} onChange={(e) => setPersona(e.target.value)} rows={3} className="w-full resize-y" placeholder={t("Como o canal fala e o que ele posta. O estudo preenche sozinho.")} />
         </label>
         <label className={field}>
-          Hashtags fixas
+          {t("Hashtags fixas")}
           <input type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="#anime #edit" className="mono w-full" />
-          <span className="text-xs text-faint">Entram em todo post, junto com as que o agente escolhe pro vídeo (até 5 no total).</span>
+          <span className="text-xs text-faint">{t("Entram em todo post, junto com as que o agente escolhe pro vídeo (até 5 no total).")}</span>
         </label>
         {error && <span role="alert" className="text-[13px] text-live">{error}</span>}
       </div>
       <div className="flex items-center justify-end gap-2 border-t border-line-soft px-[22px] py-4">
         <button className="btn btn-ghost" type="button" onClick={onClose}>
-          Cancelar
+          {t("Cancelar")}
         </button>
         <button className="btn btn-pri" type="submit" disabled={!slugOk || pending}>
           {pending && <ISpin size={14} />}
-          Salvar
+          {t("Salvar")}
         </button>
       </div>
     </form>
@@ -348,7 +350,7 @@ function Notes({ slug, notes }: { slug: string; notes: NoteDto[] }) {
   const [, start] = useTransition();
   const [error, action] = useActionState(async (_: string | null, fd: FormData) => {
     const text = String(fd.get("text") ?? "").trim();
-    if (!text) return "Escreva a observação";
+    if (!text) return t("Escreva a observação");
     try {
       await commands.addNote(slug, text, fd.get("once") === "on");
       await refresh();
@@ -369,24 +371,24 @@ function Notes({ slug, notes }: { slug: string; notes: NoteDto[] }) {
     });
 
   return (
-    <Panel id="obs" title="Observações pro agente" sub="Do seu jeito, em português normal. O agente lê isso antes de criar e de avaliar cada vídeo.">
+    <Panel id="obs" title={t("Observações pro agente")} sub={t("Do seu jeito, em português normal. O agente lê isso antes de criar e de avaliar cada vídeo.")}>
       <form action={action} className="flex flex-col gap-2.5 px-5 pb-4">
         <label htmlFor="obs-text" className="sr-only">
-          Nova observação
+          {t("Nova observação")}
         </label>
         <textarea
           id="obs-text"
           name="text"
           rows={3}
-          placeholder="Ex.: usar mais cenas na chuva; nada de música animada; legenda sempre em minúsculo"
+          placeholder={t("Ex.: usar mais cenas na chuva; nada de música animada; legenda sempre em minúsculo")}
         />
         <div className="flex flex-wrap items-center gap-2.5">
           <label className="inline-flex items-center gap-2 text-xs text-dim">
             <input type="checkbox" name="once" className="accent-[#8b8cff]" />
-            Só no próximo vídeo
+            {t("Só no próximo vídeo")}
           </label>
           {error && <span role="alert" className="text-xs text-live">{error}</span>}
-          <Submit className="btn-sm ml-auto">Adicionar</Submit>
+          <Submit className="btn-sm ms-auto">{t("Adicionar")}</Submit>
         </div>
       </form>
       {list.map((n) => (
@@ -394,14 +396,14 @@ function Notes({ slug, notes }: { slug: string; notes: NoteDto[] }) {
           {n.once ? <IOnce className="mt-0.5 text-dim" /> : <INote className="mt-0.5 text-dim" />}
           <div className="flex flex-col gap-0.5">
             <span>{n.text}</span>
-            <span className="text-xs text-dim">{n.once ? "some depois de usar uma vez" : n.created_at ? `adicionada ${shortDate(n.created_at)}` : "vale até você apagar"}</span>
+            <span className="text-xs text-dim">{n.once ? t("some depois de usar uma vez") : n.created_at ? t("adicionada {d}", { d: shortDate(n.created_at) }) : t("vale até você apagar")}</span>
           </div>
-          <button className="icon-btn" type="button" aria-label="Apagar observação" onClick={() => del(n)}>
+          <button className="icon-btn" type="button" aria-label={t("Apagar observação")} onClick={() => del(n)}>
             <IX size={14} />
           </button>
         </div>
       ))}
-      {!list.length && <p className="m-0 border-t border-line-soft px-5 py-3.5 text-[13px] text-dim">Nenhuma observação. O agente segue só o estilo aprendido.</p>}
+      {!list.length && <p className="m-0 border-t border-line-soft px-5 py-3.5 text-[13px] text-dim">{t("Nenhuma observação. O agente segue só o estilo aprendido.")}</p>}
     </Panel>
   );
 }
@@ -409,8 +411,8 @@ function Notes({ slug, notes }: { slug: string; notes: NoteDto[] }) {
 // ---------------------------------------------------------------- inspiracoes
 
 function studiedLabel(r: HandleRefs | undefined) {
-  if (!r || !r.studied) return "ainda não estudado";
-  return `${r.studied} ${r.studied === 1 ? "vídeo estudado" : "vídeos estudados"}`;
+  if (!r || !r.studied) return t("ainda não estudado");
+  return r.studied === 1 ? t("{n} vídeo estudado", { n: r.studied }) : t("{n} vídeos estudados", { n: r.studied });
 }
 
 function Inspirations({ slug, main, extra, refs, liveClips }: { slug: string; main: string; extra: string[]; refs: HandleRefs[]; liveClips?: boolean }) {
@@ -420,11 +422,11 @@ function Inspirations({ slug, main, extra, refs, liveClips }: { slug: string; ma
   const [, start] = useTransition();
   const [error, action] = useActionState(async (_: string | null, fd: FormData) => {
     const h = String(fd.get("handle") ?? "").trim();
-    if (!h) return "Cole o @ ou o link do perfil";
+    if (!h) return t("Cole o @ ou o link do perfil");
     try {
       await commands.addInspiration(slug, h);
       await refresh();
-      toast("Adicionado. Clique em Estudar na linha dele quando quiser que o canal aprenda com ele.");
+      toast(t("Adicionado. Clique em Estudar na linha dele quando quiser que o canal aprenda com ele."));
       return null;
     } catch (e) {
       return errMsg(e);
@@ -438,8 +440,8 @@ function Inspirations({ slug, main, extra, refs, liveClips }: { slug: string; ma
         await commands.studyNow(slug, handle);
         toast(
           handle
-            ? `Estudando @${handle}: baixa os vídeos novos dele e atualiza o estilo. Acompanhe em Ao vivo.`
-            : "Estudo começou: baixa os vídeos novos de todos e atualiza o estilo. Acompanhe em Ao vivo.",
+            ? t("Estudando @{h}: baixa os vídeos novos dele e atualiza o estilo. Acompanhe em Ao vivo.", { h: handle })
+            : t("Estudo começou: baixa os vídeos novos de todos e atualiza o estilo. Acompanhe em Ao vivo."),
         );
       } catch (e) {
         toast(errMsg(e), "error");
@@ -460,40 +462,40 @@ function Inspirations({ slug, main, extra, refs, liveClips }: { slug: string; ma
   return (
     <Panel
       id="insp"
-      title={`Canais que ${slug.startsWith("_") ? "o canal" : `o ${slug}`} estuda`}
-      sub="Estudar baixa só os vídeos novos do perfil. Se nada mudou desde o último estudo, não gasta tokens."
+      title={slug.startsWith("_") ? t("Canais que o canal estuda") : t("Canais que o {s} estuda", { s: slug })}
+      sub={t("Estudar baixa só os vídeos novos do perfil. Se nada mudou desde o último estudo, não gasta tokens.")}
       actions={
         <button className="btn btn-pri btn-sm" type="button" onClick={() => study(null)} disabled={studying || busy || list.length < 2}
-          title="Busca os vídeos novos de todos os perfis da lista">
+          title={t("Busca os vídeos novos de todos os perfis da lista")}>
           {(studying || busy) && <ISpin size={14} />}
-          {busy ? "Trabalhando…" : "Estudar todos"}
+          {busy ? t("Trabalhando…") : t("Estudar todos")}
         </button>
       }
     >
       <form action={action} className="flex flex-wrap items-end gap-2 px-5 pb-4">
         <label className="flex flex-[1_1_300px] flex-col gap-1.5 text-[13px] font-medium">
-          Adicionar canal
-          <input type="text" name="handle" placeholder="@perfil ou link do TikTok" className="w-full" autoComplete="off" />
+          {t("Adicionar canal")}
+          <input type="text" name="handle" placeholder={t("@perfil ou link do TikTok")} className="w-full" autoComplete="off" />
         </label>
-        <Submit>Adicionar</Submit>
+        <Submit>{t("Adicionar")}</Submit>
         {error && <span role="alert" className="basis-full text-xs text-live">{error}</span>}
       </form>
       {list.map((h, i) => (
         <div key={h} className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-line-soft px-5 py-3.5">
           <div className="flex flex-[1_1_240px] flex-col">
-            <span className="mono font-medium">@{h}</span>
+            <span className="mono font-medium"><bdi>@{h}</bdi></span>
             <span className="text-[13px] text-muted">
-              {i === 0 ? "principal" : "inspiração extra"} · {studiedLabel(refs.find((r) => r.handle === h.toLowerCase()))}
+              {i === 0 ? t("principal") : t("inspiração extra")} · {studiedLabel(refs.find((r) => r.handle === h.toLowerCase()))}
             </span>
           </div>
           <button className="btn btn-sm" type="button" onClick={() => study(h)} disabled={studying || busy}
-            title={`Busca só os vídeos novos de @${h} e atualiza o estilo`}>
-            Estudar
+            title={t("Busca só os vídeos novos de @{h} e atualiza o estilo", { h })}>
+            {t("Estudar")}
           </button>
           <a className="btn btn-ghost btn-sm" href={`https://www.tiktok.com/@${h}`} target="_blank" rel="noreferrer">
-            Abrir perfil
+            {t("Abrir perfil")}
           </a>
-          <button className="icon-btn" type="button" aria-label={`Remover @${h}`} onClick={() => remove(h)}>
+          <button className="icon-btn" type="button" aria-label={t("Remover @{h}", { h })} onClick={() => remove(h)}>
             <IX size={14} />
           </button>
         </div>
@@ -501,10 +503,10 @@ function Inspirations({ slug, main, extra, refs, liveClips }: { slug: string; ma
       {!list.length &&
         (liveClips ? (
           <p className="m-0 border-t border-line-soft px-5 py-3.5 text-[13px] text-dim">
-            Não precisa em canal de cortes: os cortes saem das lives dos streamers e o Claude escolhe pelo momento, chat e categoria. O estudo não entra nos cortes. Pra mudar o tom de título e legenda, use as observações do canal.
+            {t("Não precisa em canal de cortes: os cortes saem das lives dos streamers e o Claude escolhe pelo momento, chat e categoria. O estudo não entra nos cortes. Pra mudar o tom de título e legenda, use as observações do canal.")}
           </p>
         ) : (
-          <p className="m-0 border-t border-line-soft px-5 py-3.5 text-[13px] text-warn">Sem canal pra estudar. Adicione pelo menos um.</p>
+          <p className="m-0 border-t border-line-soft px-5 py-3.5 text-[13px] text-warn">{t("Sem canal pra estudar. Adicione pelo menos um.")}</p>
         ))}
     </Panel>
   );
@@ -515,12 +517,12 @@ function Inspirations({ slug, main, extra, refs, liveClips }: { slug: string; ma
 function Accounts({ d }: { d: ChannelDetail }) {
   const s = d.summary;
   return (
-    <Panel id="conta" title="Conta" sub={`Onde ${s.slug} posta. Cada conta fica logada numa janela só desse canal.`}>
+    <Panel id="conta" title={t("Conta")} sub={t("Onde {s} posta. Cada conta fica logada numa janela só desse canal.", { s: s.slug })}>
       <PlatformLogin key={`${s.slug}:tiktok`} slug={s.slug} platform="tiktok" handle={s.tiktok} compact />
       <PlatformLogin key={`${s.slug}:youtube`} slug={s.slug} platform="youtube" handle={s.youtube} compact />
       <div className="flex items-start gap-2 border-t border-line-soft px-5 pt-3 pb-4 text-[13px] text-muted">
         <IShield className="mt-0.5 flex-none" />
-        <span>Antes de postar, o tkd confere se está na conta certa. Se não estiver, não posta. Cada vídeo aprovado vai pra todas as redes conectadas, público (no YouTube como Short).</span>
+        <span>{t("Antes de postar, o tkd confere se está na conta certa. Se não estiver, não posta. Cada vídeo aprovado vai pra todas as redes conectadas, público (no YouTube como Short).")}</span>
       </div>
     </Panel>
   );
@@ -531,27 +533,27 @@ function Accounts({ d }: { d: ChannelDetail }) {
 function AgentSummary({ d }: { d: ChannelDetail }) {
   const def = d.picks[0];
   return (
-    <Panel id="agente" title="Inteligência do agente" sub="Usa o padrão de todos os canais, menos onde você mudar.">
+    <Panel id="agente" title={t("Inteligência do agente")} sub={t("Usa o padrão de todos os canais, menos onde você mudar.")}>
       <div className="px-5 pb-3.5">
         {def && (
-          <Kv k="Padrão">
+          <Kv k={t("Padrão")}>
             <span className="text-[13px] text-fg-2">
               {d.agent_model || d.agent_effort
-                ? `${modelLabel(d.agent_model || def.model)} · esforço ${EFFORT_LABEL[d.agent_effort || def.effort] ?? def.effort}`
-                : `padrão do app (${def.model_label})`}
+                ? t("{m} · esforço {e}", { m: modelLabel(d.agent_model || def.model), e: effortLabel(d.agent_effort || def.effort) })
+                : t("padrão do app ({m})", { m: def.model_label })}
             </span>
           </Kv>
         )}
         {d.picks.map((p) => {
           const own = p.model_from.startsWith("channel") || p.effort_from.startsWith("channel") || p.model_from === "global_task" || p.effort_from === "global_task";
           return (
-            <Kv key={p.task} k={p.label}>
+            <Kv key={p.task} k={tx(p.label)}>
               {own ? (
                 <span className="rounded-md bg-accent-soft px-2 py-[3px] text-xs font-medium whitespace-nowrap text-accent-ink">
-                  {p.model_label} · {EFFORT_LABEL[p.effort] ?? p.effort}
+                  {p.model_label} · {effortLabel(p.effort)}
                 </span>
               ) : (
-                <span className="text-[13px] text-dim">padrão</span>
+                <span className="text-[13px] text-dim">{t("padrão")}</span>
               )}
             </Kv>
           );
@@ -559,7 +561,7 @@ function AgentSummary({ d }: { d: ChannelDetail }) {
       </div>
       <div className="px-5 pb-[18px]">
         <Link to="/agentes" className="text-[13px] font-medium">
-          Mudar nos agentes
+          {t("Mudar nos agentes")}
         </Link>
       </div>
     </Panel>
@@ -569,26 +571,26 @@ function AgentSummary({ d }: { d: ChannelDetail }) {
 function Learned({ d }: { d: ChannelDetail }) {
   const l = d.learned;
   return (
-    <Panel id="mem" title={`O que ${d.summary.slug.startsWith("_") ? "o canal" : `o ${d.summary.slug}`} já aprendeu`}>
+    <Panel id="mem" title={d.summary.slug.startsWith("_") ? t("O que o canal já aprendeu") : t("O que o {s} já aprendeu", { s: d.summary.slug })}>
       <div className="px-5 pb-4">
-        <Kv k="Guia de estilo">
-          <span className={`text-[13px] ${l.has_style_card ? "text-ok" : "text-warn"}`}>{l.has_style_card ? "pronto" : "ainda não"}</span>
+        <Kv k={t("Guia de estilo")}>
+          <span className={`text-[13px] ${l.has_style_card ? "text-ok" : "text-warn"}`}>{l.has_style_card ? t("pronto") : t("ainda não")}</span>
         </Kv>
-        <Kv k="Vídeos de referência estudados">
+        <Kv k={t("Vídeos de referência estudados")}>
           <span className="mono text-[13px] text-fg-2">
             {l.refs_analyzed} / {l.refs_total}
           </span>
         </Kv>
-        <Kv k="Vídeos aprovados">
+        <Kv k={t("Vídeos aprovados")}>
           <span className="mono text-[13px] text-fg-2">
             {l.library}
-            {l.avg_score != null ? ` · nota ${l.avg_score.toFixed(1)}` : ""}
+            {l.avg_score != null ? ` · ${t("nota {n}", { n: l.avg_score.toFixed(1) })}` : ""}
           </span>
         </Kv>
         {l.style_excerpt && <p className="m-0 mt-2 line-clamp-4 rounded-lg bg-well p-3 text-[13px] whitespace-pre-line text-muted">{l.style_excerpt}</p>}
         {l.last_problems.length > 0 && (
           <div className="mt-3 flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-dim">Últimas críticas do avaliador</span>
+            <span className="text-xs font-medium text-dim">{t("Últimas críticas do avaliador")}</span>
             {l.last_problems.map((p, i) => (
               <span key={i} className="text-[13px] text-fg-2">
                 {p.replace(/^\S+\s/, "")}
@@ -601,7 +603,7 @@ function Learned({ d }: { d: ChannelDetail }) {
   );
 }
 
-const RUN_LABEL: Record<string, [string, string]> = {
+const RUN_LABEL: Record<string, [MsgKey, string]> = {
   posted: ["Postado", "text-ok"],
   ok: ["Aprovado (teste)", "text-ok"],
   reprovado: ["Reprovado", "text-warn"],
@@ -612,10 +614,11 @@ const RUN_LABEL: Record<string, [string, string]> = {
 function Runs({ d }: { d: ChannelDetail }) {
   if (!d.runs.length) return null;
   return (
-    <Panel id="runs" title="Últimos vídeos">
+    <Panel id="runs" title={t("Últimos vídeos")}>
       <div className="px-5 pb-4">
         {d.runs.map((r) => {
-          const [label, cls] = RUN_LABEL[r.status] ?? [r.status, "text-muted"];
+          const [key, cls] = RUN_LABEL[r.status] ?? [null, "text-muted"];
+          const label = key ? t(key) : r.status;
           return (
             <Kv key={r.run_id} k={<span className="mono text-[13px] text-muted">{shortDate(r.at)} · {hm(r.at)}</span>}>
               <span className={`max-w-[220px] truncate text-[13px] ${cls}`} title={r.detail}>
@@ -636,14 +639,14 @@ function DeleteChannel({ d }: { d: ChannelDetail }) {
   const [open, setOpen] = useState(false);
   const busy = d.summary.busy;
   return (
-    <Panel id="excluir" title="Excluir canal" sub="Tira o canal do app e desliga o login das contas. Dá pra recuperar pela pasta .lixeira.">
+    <Panel id="excluir" title={t("Excluir canal")} sub={t("Tira o canal do app e desliga o login das contas. Dá pra recuperar pela pasta .lixeira.")}>
       <div className="flex items-center justify-between gap-4 border-t border-line-soft px-5 py-4">
-        <span className="text-[13px] text-muted">{busy ? "O canal está rodando agora. Espere terminar." : "O histórico dele some do Ao vivo e do Consumo."}</span>
+        <span className="text-[13px] text-muted">{busy ? t("O canal está rodando agora. Espere terminar.") : t("O histórico dele some do Ao vivo e do Consumo.")}</span>
         <button className="btn btn-sec btn-sm shrink-0 !text-live" type="button" onClick={() => setOpen(true)} disabled={busy}>
-          Excluir canal
+          {t("Excluir canal")}
         </button>
       </div>
-      <Dialog open={open} onClose={() => setOpen(false)} label={`Excluir ${d.summary.slug}`}>
+      <Dialog open={open} onClose={() => setOpen(false)} label={t("Excluir {s}", { s: d.summary.slug })}>
         <ConfirmDelete slug={d.summary.slug} onClose={() => setOpen(false)} />
       </Dialog>
     </Panel>
@@ -666,7 +669,7 @@ function ConfirmDelete({ slug, onClose }: { slug: string; onClose: () => void })
         qc.removeQueries({ queryKey: ["usage"] });
         await qc.invalidateQueries({ queryKey: keys.channels });
         await navigate({ to: "/" });
-        toast(`${slug} excluído. Cópia em ${dst}`);
+        toast(t("{s} excluído. Cópia em {d}", { s: slug, d: dst }));
       } catch (e) {
         toast(errMsg(e), "error");
       }
@@ -680,24 +683,24 @@ function ConfirmDelete({ slug, onClose }: { slug: string; onClose: () => void })
       }}
     >
       <div className="flex flex-col gap-2 px-[22px] pt-5 pb-4">
-        <h2 className="m-0 text-[17px] font-semibold">Excluir {slug}?</h2>
+        <h2 className="m-0 text-[17px] font-semibold">{t("Excluir {s}?", { s: slug })}</h2>
         <p className="m-0 text-[14px] text-fg-2">
-          O canal some do app e o piloto deixa de postar nele. As configurações, a biblioteca e os logins do TikTok e do YouTube vão pra pasta <span className="mono">.lixeira</span>. O histórico dele no Ao vivo e no Consumo é apagado. Nada muda nas redes.
+          {t("O canal some do app e o piloto deixa de postar nele. As configurações, a biblioteca e os logins do TikTok e do YouTube vão pra pasta .lixeira. O histórico dele no Ao vivo e no Consumo é apagado. Nada muda nas redes.")}
         </p>
         <label className="mt-2 flex flex-col gap-1.5 text-[13px] text-muted">
           <span>
-            Digite <b className="mono text-fg">{slug}</b> pra confirmar
+            {t("Digite")} <b className="mono text-fg">{slug}</b> {t("pra confirmar")}
           </span>
           <input type="text" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" autoFocus className="w-full" />
         </label>
       </div>
       <div className="flex items-center justify-end gap-2 border-t border-line-soft px-[22px] py-4">
         <button className="btn btn-ghost" type="button" onClick={onClose}>
-          Cancelar
+          {t("Cancelar")}
         </button>
         <button className="btn btn-danger" type="submit" disabled={!ok || pending}>
           {pending && <ISpin size={14} />}
-          Excluir canal
+          {t("Excluir canal")}
         </button>
       </div>
     </form>
@@ -717,7 +720,7 @@ export default function Channel() {
           <Accounts d={d} />
         </div>
         <div className="flex min-w-0 flex-[2_1_340px] flex-col gap-6">
-          <Panel id="agenda" title="Quando postar" sub={d.summary.is_test ? "Canal de teste: só roda quando você manda." : "Escolha os dias e os horários dos vídeos."}>
+          <Panel id="agenda" title={t("Quando postar")} sub={d.summary.is_test ? t("Canal de teste: só roda quando você manda.") : t("Escolha os dias e os horários dos vídeos.")}>
             <SchedulePicker slug={slug} schedule={d.schedule} nextLabel={d.summary.next_post_label} />
           </Panel>
           <AgentSummary d={d} />

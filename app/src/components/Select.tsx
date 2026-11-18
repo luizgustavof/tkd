@@ -3,10 +3,11 @@
 // Teclado: setas, Home/End, Enter/Espaco, Esc, Tab e digitar a primeira letra.
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { ICheck } from "./icons";
+import { isRtl } from "../lib/i18n";
 
 export type SelectOption<T extends string> = { value: T; label: string; hint?: string };
 
-export function Select<T extends string>({ value, options, onChange, label, size = "md", className = "", placeholder = "Escolha" }: {
+export function Select<T extends string>({ value, options, onChange, label, size = "md", className = "", placeholder = "" }: {
   value: T;
   options: SelectOption<T>[];
   onChange: (v: T) => void;
@@ -55,7 +56,9 @@ export function Select<T extends string>({ value, options, onChange, label, size
       const h = p.offsetHeight;
       const below = window.innerHeight - r.bottom - 8;
       const up = below < h && r.top > below;
-      p.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - Math.max(r.width, p.offsetWidth) - 8))}px`;
+      const w = Math.max(r.width, p.offsetWidth);
+      const x = isRtl() ? r.right - w : r.left;
+      p.style.left = `${Math.max(8, Math.min(x, window.innerWidth - w - 8))}px`;
       p.style.top = `${up ? r.top - h - 6 : r.bottom + 6}px`;
       p.style.minWidth = `${r.width}px`;
       p.dataset.side = up ? "top" : "bottom";
@@ -115,7 +118,7 @@ export function Select<T extends string>({ value, options, onChange, label, size
             show();
           }
         }}
-        className={`sel-trigger flex w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-line-strong bg-well text-left text-fg transition-[border-color,box-shadow] ${h} ${className}`}
+        className={`sel-trigger flex w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-line-strong bg-well text-start text-fg transition-[border-color,box-shadow] ${h} ${className}`}
         data-open={open || undefined}
       >
         <span className={`truncate ${current ? "" : "text-faint"}`}>{current?.label ?? placeholder}</span>

@@ -2,6 +2,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import type { Stage } from "../lib/api";
 import { useAvatar } from "../lib/queries";
+import { t, tx } from "../lib/i18n";
 
 export function Panel({ title, sub, actions, children, className = "", id }: {
   title?: ReactNode;
@@ -68,7 +69,7 @@ export function Dot({ tone, pulse = false, className = "" }: { tone: string; pul
 
 export function Strip({ stages, labels = false }: { stages: Stage[]; labels?: boolean }) {
   const now = stages.findIndex((s) => s.state === "now");
-  const aria = now >= 0 ? `Agora: ${stages[now]!.label}, passo ${now + 1} de ${stages.length}` : "Etapas do dia";
+  const aria = now >= 0 ? t("Agora: {label}, passo {n} de {total}", { label: tx(stages[now]!.label), n: now + 1, total: stages.length }) : t("Etapas do dia");
   if (!labels) {
     return (
       <span className="seg-strip mt-0.5" role="img" aria-label={aria}>
@@ -90,7 +91,7 @@ export function Strip({ stages, labels = false }: { stages: Stage[]; labels?: bo
               s.state === "now" ? "font-semibold text-fg" : s.state === "done" || s.state === "posted" ? "text-muted" : "text-dim"
             }`}
           >
-            {s.label}
+            {tx(s.label)}
           </span>
         </span>
       ))}
