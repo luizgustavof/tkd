@@ -2,11 +2,9 @@
 
 > [English](README.md) · **Português**
 
-<p align="center">
-  <a href="docs/media/trailer.mp4"><img src="docs/media/trailer.gif" alt="trailer do tkd: criando um canal no app" width="800"></a>
-  <br>
-  <sub><a href="docs/media/trailer.mp4">Ver o trailer de 54 s (com som)</a></sub>
-</p>
+https://github.com/user-attachments/assets/f7ce3f47-0e3a-4dbc-a413-65faa2ea2646
+
+<p align="center"><sub>O vídeo não abriu? <a href="https://streamable.com/rvi1hf">Ver o trailer de 54 s no Streamable</a></sub></p>
 
 App em Rust (CLI `tkd` + app desktop Tauri) que roda canais de vídeo curto sozinho. Cada canal é um agente com
 memória própria, conta própria (um perfil do Edge por canal) e horários de post próprios.
